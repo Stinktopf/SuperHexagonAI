@@ -89,9 +89,26 @@ The following python libraries are required:
 
 ```
 numpy
-pytorch
+torch (CUDA 11.8)
+torchvision (CUDA 11.8)
+torchaudio (CUDA 11.8)
 opencv-python
 ```
+
+**Note:** CUDA support is currently only available up to Python 3.12 and requires an NVIDIA GPU.
+
+
+Install them with:
+
+```
+python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+```
+
+Additionally, you need Super Hexagon in the **pre-neo Steam Beta version** to use this setup:
+
+<div align="center">
+<img src="images/steam.png" width="50%">
+</div>
 
 Note that both the python process as well as the game process need to be run with admin privileges.
 In order to always run the game with admin privileges right click on the Super Hexagon executable `superhexagon.exe`, 

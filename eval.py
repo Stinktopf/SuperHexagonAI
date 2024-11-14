@@ -18,7 +18,7 @@ if __name__ == '__main__':
     n_atoms = 51
 
     # setup
-    fp, fcp = np.zeros((1, n_frames, *SuperHexagonInterface.frame_size), dtype=np.bool), np.zeros((1, n_frames, *SuperHexagonInterface.frame_size_cropped), dtype=np.bool)
+    fp, fcp = np.zeros((1, n_frames, *SuperHexagonInterface.frame_size), dtype=bool), np.zeros((1, n_frames, *SuperHexagonInterface.frame_size_cropped), dtype=bool)
     support = np.linspace(-1, 0, n_atoms)
 
     net = Network(n_frames, SuperHexagonInterface.n_actions, n_atoms).to(device)
