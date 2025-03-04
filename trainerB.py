@@ -84,51 +84,75 @@ class NoisyLinear(nn.Module):
         return F.linear(x, weight, bias)
 
 # -------------------------------
-# ResNet-ähnliches Actor-Critic-Netzwerk (ohne Winkel-Input)
-# Mit NoisyLinear für den Policy-Head
+# Dual-View ResNet-ähnliches Actor-Critic-Netzwerk
 # -------------------------------
-class ResNetActorCritic(nn.Module):
+class DualViewResNetActorCritic(nn.Module):
     def __init__(self, n_frames, n_actions):
-        super(ResNetActorCritic, self).__init__()
-        # Erste Convolution-Schicht: Eingabe (n_frames, 60, 60)
-        self.conv1 = nn.Conv2d(n_frames, 16, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(16)
+        """
+        n_frames: Anzahl der Frames pro Ansicht (z.B. 4)
+        n_actions: Anzahl möglicher Aktionen
+        """
+        super(DualViewResNetActorCritic, self).__init__()
+        # Verarbeitung der Weitansicht
+        self.conv1_wide = nn.Conv2d(n_frames, 16, kernel_size=3, stride=1, padding=1)
+        self.bn1_wide = nn.BatchNorm2d(16)
+        self.layer1_wide = ResidualBlock(16, 32, stride=2)    # -> (32, 30, 30)
+        self.layer2_wide = ResidualBlock(32, 64, stride=2)    # -> (64, 15, 15)
+        self.fc_image_wide = nn.Linear(64 * 15 * 15, 120)
         
-        # Zwei Residual-Blöcke, die die räumliche Auflösung reduzieren:
-        # Nach conv1: (16, 60, 60)
-        # layer1: (32, 30, 30)
-        # layer2: (64, 15, 15)
-        self.layer1 = ResidualBlock(16, 32, stride=2)
-        self.layer2 = ResidualBlock(32, 64, stride=2)
+        # Verarbeitung der zentrierten Ansicht
+        self.conv1_crop = nn.Conv2d(n_frames, 16, kernel_size=3, stride=1, padding=1)
+        self.bn1_crop = nn.BatchNorm2d(16)
+        self.layer1_crop = ResidualBlock(16, 32, stride=2)    # -> (32, 30, 30)
+        self.layer2_crop = ResidualBlock(32, 64, stride=2)    # -> (64, 15, 15)
+        self.fc_image_crop = nn.Linear(64 * 15 * 15, 120)
         
-        # Fully-Connected-Schicht für Bildfeatures
-        # Bei 64 Kanälen und 15x15 Feature-Maps: 64 * 15 * 15 Features
-        self.fc_image = nn.Linear(64 * 15 * 15, 120)
-        self.fc_fusion = nn.Linear(120, 84)
+        # Fusion der beiden Feature-Vektoren
+        self.fc_fusion = nn.Linear(120 * 2, 84)
         
-        # Policy-Head als Noisy Linear Layer für bessere Exploration
+        # Policy- und Value-Heads
         self.policy_head = NoisyLinear(84, n_actions)
         self.value_head = nn.Linear(84, 1)
     
     def forward(self, x):
-        # x: (Batch, n_frames, H, W) – erwartet H=60, W=60
-        x = F.relu(self.bn1(self.conv1(x)))   # -> (Batch, 16, 60, 60)
-        x = self.layer1(x)                    # -> (Batch, 32, 30, 30)
-        x = self.layer2(x)                    # -> (Batch, 64, 15, 15)
-        x = x.view(x.size(0), -1)             # Flatten
-        x = F.relu(self.fc_image(x))
-        x = F.relu(self.fc_fusion(x))
-        logits = self.policy_head(x)
-        value = self.value_head(x)
+        """
+        x: Tensor der Form (Batch, 2*n_frames, 60, 60)
+           Die ersten n_frames Kanäle entsprechen der Weitansicht,
+           die nächsten n_frames Kanäle der zentrierten Ansicht.
+        """
+        B = x.size(0)
+        n = x.size(1) // 2
+        wide = x[:, :n, :, :]
+        crop = x[:, n:, :, :]
+        
+        # Weitansicht verarbeiten
+        x_w = F.relu(self.bn1_wide(self.conv1_wide(wide)))
+        x_w = self.layer1_wide(x_w)
+        x_w = self.layer2_wide(x_w)
+        x_w = x_w.view(B, -1)
+        x_w = F.relu(self.fc_image_wide(x_w))
+        
+        # Zentrierte Ansicht verarbeiten
+        x_c = F.relu(self.bn1_crop(self.conv1_crop(crop)))
+        x_c = self.layer1_crop(x_c)
+        x_c = self.layer2_crop(x_c)
+        x_c = x_c.view(B, -1)
+        x_c = F.relu(self.fc_image_crop(x_c))
+        
+        # Fusion der beiden Ströme
+        x_fused = torch.cat([x_w, x_c], dim=1)
+        x_fused = F.relu(self.fc_fusion(x_fused))
+        
+        logits = self.policy_head(x_fused)
+        value = self.value_head(x_fused)
         return logits, value
 
 # -------------------------------
-# PPO-Trainer (ohne Winkel-Input)
-# Mit LR-Scheduler und adaptivem Entropie-Koeffizienten
+# PPO-Trainer mit dualem Input
 # -------------------------------
 class PPOTrainer:
     def __init__(self,
-                 n_frames=4,
+                 n_frames=4,  # Anzahl Frames pro Ansicht
                  n_actions=3,
                  lr=2e-4,
                  gamma=0.99,
@@ -153,20 +177,28 @@ class PPOTrainer:
         self.entropy_decay = 0.9999
         self.min_entropy_coef = 0.001
         
-        # SuperHexagon-Interface
+        # SuperHexagon-Interface: liefert ein Tuple (weit, zentriert)
         self.env = SuperHexagonInterface(frame_skip=4, run_afap=True, allow_game_restart=True)
-        state, _ = self.env.reset()
-        self.input_shape = (n_frames,) + state.shape
+        state = self.env.reset()  # state ist ein Tuple: (wide, crop)
+        wide, crop = state  # beide mit Form (60,60)
+        self.n_frames = n_frames
+        # Erzeuge separate Frame-Stapel für beide Ansichten
+        state_stack_wide = np.stack([wide] * n_frames, axis=0)   # (n_frames, 60,60)
+        state_stack_crop = np.stack([crop] * n_frames, axis=0)     # (n_frames, 60,60)
+        # Zusammenführen entlang der Kanal-Dimension -> (2*n_frames, 60,60)
+        self.state_stack = np.concatenate([state_stack_wide, state_stack_crop], axis=0)
+        
+        self.input_shape = self.state_stack.shape  # (2*n_frames, 60,60)
         self.n_actions = n_actions
         
-        # Verwende das ResNet-ähnliche Netzwerk ohne Winkel-Input
-        self.net = ResNetActorCritic(n_frames, n_actions).to(device)
+        # Nutze das duale Netzwerk
+        self.net = DualViewResNetActorCritic(n_frames, n_actions).to(device)
         self.optimizer = optim.Adam(self.net.parameters(), lr=lr)
         # LR-Scheduler: Reduziert die Lernrate schrittweise
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5000, gamma=0.99)
     
     def select_action(self, state):
-        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)  # (1, 2*n_frames, 60,60)
         with torch.no_grad():
             logits, value = self.net(state_tensor)
         probs = F.softmax(logits, dim=-1)
@@ -188,10 +220,8 @@ class PPOTrainer:
         return advantages, returns
     
     def train(self):
-        # Initialisiere den Frame-Stack
-        state, _ = self.env.reset()
-        state_stack = np.stack([state] * 4, axis=0)
-        
+        # Verwende self.state_stack als initialen Zustand
+        state_stack = self.state_stack
         timestep = 0
         episode = 0
         episode_reward = 0
@@ -203,11 +233,15 @@ class PPOTrainer:
         while timestep < self.total_timesteps:
             # Sammle update_timesteps Schritte
             for _ in range(self.update_timesteps):
-                current_state = state_stack.copy()
+                current_state = state_stack.copy()  # (2*n_frames, 60,60)
                 
                 action, log_prob, value = self.select_action(current_state)
                 next_obs, _, done = self.env.step(action)
-                next_state, _ = next_obs
+                # next_obs: Tuple (wide, crop)
+                wide_next, crop_next = next_obs
+                # Neues Frame: Zusammenführung beider Ansichten (Form: (2,60,60))
+                next_frame = np.concatenate([np.expand_dims(wide_next, axis=0),
+                                             np.expand_dims(crop_next, axis=0)], axis=0)
                 
                 reward = shape_reward(episode_frames, done)
                 
@@ -220,13 +254,17 @@ class PPOTrainer:
                 
                 episode_reward += reward
                 episode_frames += 1
-                state_stack = np.concatenate(([next_state], state_stack[:-1]), axis=0)
+                # Aktualisiere den State-Stack: Entferne die ältesten 2 Kanäle und füge next_frame oben ein
+                state_stack = np.concatenate([next_frame, state_stack[:-2]], axis=0)
                 timestep += 1
                 
                 if done:
                     print(f"Episode {episode} beendet nach {episode_frames} Frames, Reward: {episode_reward:.2f}")
-                    state, _ = self.env.reset()
-                    state_stack = np.stack([state] * 4, axis=0)
+                    state = self.env.reset()  # tuple (wide, crop)
+                    wide, crop = state
+                    state_stack_wide = np.stack([wide] * self.n_frames, axis=0)
+                    state_stack_crop = np.stack([crop] * self.n_frames, axis=0)
+                    state_stack = np.concatenate([state_stack_wide, state_stack_crop], axis=0)
                     episode += 1
                     episode_reward = 0
                     episode_frames = 0
@@ -281,11 +319,9 @@ class PPOTrainer:
                     loss.backward()
                     self.optimizer.step()
             
-            # Update des Lernraten-Schedulers
+            # Update des Lernraten-Schedulers und Anpassung des Entropie-Koeffizienten
             self.scheduler.step()
-            # Reduziere den Entropie-Koeffizienten adaptiv
             self.entropy_coef = max(self.min_entropy_coef, self.entropy_coef * self.entropy_decay)
-            # Setze den Rauschzustand der NoisyLinear-Schichten zurück
             self.net.policy_head.reset_noise()
             
             # Leere Trajektorien-Speicher für den nächsten Update-Zyklus
