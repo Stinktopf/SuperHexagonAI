@@ -1,11 +1,29 @@
 from math import floor
+import keyboard
 
 from pyrlhook import GameInterface, PixelFormat, PixelDataType
 import cv2
 import os
 from time import sleep
 from subprocess import Popen
+from dataclasses import dataclass
 
+@dataclass()
+class Wall:
+    slot: int
+    distance: int
+    enabled: int
+    fill: [int]
+    unk2: int
+    unk3: int
+
+    def __init__(self, slot: int, distance: int, enabled: int, fill: [int], unk2: int, unk3: int):
+        self.slot = slot
+        self.distance = distance
+        self.enabled = enabled
+        self.fill = fill
+        self.unk2 = unk2
+        self.unk3 = unk3
 
 class Recorder:
     def __init__(self, record=True):
@@ -66,6 +84,19 @@ class SuperHexagonInterface:
             self._attach_game()
 
         self.level = self.get_level()
+
+        self.paused = False
+        keyboard.add_hotkey("space", self.toggle_pause)
+        self.slow_mode = False
+        keyboard.add_hotkey("alt", self.toggle_slow_mode)
+
+    def toggle_pause(self):
+        self.paused = not self.paused
+        print("Paused" if self.paused else "Resumed")
+
+    def toggle_slow_mode(self):
+        self.slow_mode = not self.slow_mode
+        print("Slow Mode Activated" if self.slow_mode else "Slow Mode Deactivated")
 
     def _esc(self, down):
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x42877], 1 if down else 0)
@@ -134,14 +165,7 @@ class SuperHexagonInterface:
             unk2 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 12])
             unk3 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 16])
 
-            walls.append({
-                'slot': slot,
-                'distance': distance,
-                'enabled': enabled,
-                'fill': fill,
-                'unk2': unk2,
-                'unk3': unk3
-            })
+            walls.append(Wall(slot=slot, distance=distance, enabled=enabled, fill=fill, unk2=unk2, unk3=unk3))
 
         return walls
 
@@ -279,21 +303,31 @@ class SuperHexagonInterface:
         return self._preprocess_frame(frame)
 
     def step(self, action):
+        while self.paused:  # Pause execution
+            sleep(0.1)
 
-        sleep(1.0)
+        if self.slow_mode:
+            sleep(0.1)
+
         if action == 1:
             self._left(True)
         elif action == 2:
             self._right(True)
 
         steps_alive_old = self.steps_alive
-        for i in range(self.frame_skip):
-            frame = self.game.step(self.recorder.record or i == (self.frame_skip - 1))
+
+        # Toggle for frame skip, so slow mode is smoother
+        local_frame_skip = self.frame_skip
+        if self.slow_mode:
+            local_frame_skip = 1
+
+        for i in range(local_frame_skip):
+            frame = self.game.step(self.recorder.record or i == (local_frame_skip - 1))
             if self.recorder.record:
                 self.recorder.add_frame(frame)
         self.steps_alive = self.get_n_survived_frames()
 
-        is_game_over = self.steps_alive < steps_alive_old + self.frame_skip
+        is_game_over = self.steps_alive < steps_alive_old + local_frame_skip
 
         frame, frame_cropped = self._preprocess_frame(frame)
 
