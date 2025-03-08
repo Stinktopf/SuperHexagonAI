@@ -1,95 +1,124 @@
-from superhexagon import SuperHexagonInterface  # Vorausgesetzt, diese Schnittstelle ist vorhanden
+import gymnasium as gym
+from gymnasium import spaces
+import numpy as np
+from superhexagon import SuperHexagonInterface
+from stable_baselines3 import PPO
 
-# -------------------------------
-# PPO-Trainer mit dualem Input
-# -------------------------------
-class PPOTrainer:
-    def __init__(self,
-                 n_frames=4,  # Anzahl Frames pro Ansicht
-                 n_actions=3,
-                 total_timesteps=1_000_000,
-                 update_timesteps=2048,
-                 device='cuda'):
-        self.device = device
-        self.update_timesteps = update_timesteps
-        self.total_timesteps = total_timesteps
 
-        # SuperHexagon-Interface: liefert ein Tuple (weit, zentriert)
-        self.env = SuperHexagonInterface(frame_skip=4, run_afap=True, allow_game_restart=True)
-        self.env.reset()  # state ist ein Tuple: (wide, crop)
-        self.n_frames = n_frames
-        self.n_actions = n_actions
+class SuperHexagonGymEnv(gym.Env):
+    metadata = {"render_modes": ["human"]}
 
-    def select_action(self, state):
-        # state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)  # (1, 2*n_frames, 60,60)
-        # with torch.no_grad():
-        #     logits, value = self.net(state_tensor)
-        # probs = F.softmax(logits, dim=-1)
-        # dist = torch.distributions.Categorical(probs)
-        # action = dist.sample().item()
-        # log_prob = dist.log_prob(torch.tensor(action).to(self.device)).item()
-        # return action, log_prob, value.item()
-        return 1, 1, 1
+    def __init__(self):
+        super().__init__()
+        self.env = SuperHexagonInterface(
+            frame_skip=1, run_afap=True, allow_game_restart=True
+        )
+        self.action_space = spaces.Discrete(3)  # Left, Right, Stay
 
-    # def compute_gae(self, rewards, values, dones):
-    #     advantages = []
-    #     gae = 0
-    #     # Hänge einen letzten Value für die Berechnung an
-    #     values = values + [0]
-    #     for step in reversed(range(len(rewards))):
-    #         delta = rewards[step] + self.gamma * values[step+1] * (1 - dones[step]) - values[step]
-    #         gae = delta + self.gamma * self.gae_lambda * (1 - dones[step]) * gae
-    #         advantages.insert(0, gae)
-    #     returns = [adv + v for adv, v in zip(advantages, values[:-1])]
-    #     return advantages, returns
+        self.n_slots = self.env.get_num_slots()
+        self.observation_space = spaces.Box(
+            low=-1.0,
+            high=1.0,
+            shape=(1 + 3 * self.n_slots,),
+            dtype=np.float32,
+        )
+        self.episode_frames = 0
 
-    def train(self):
-        # Verwende self.state_stack als initialen Zustand
-        timestep = 0
-        episode = 0
-        episode_reward = 0
-        episode_frames = 0
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.env.reset()
+        self.episode_frames = 0
 
-        while timestep < self.total_timesteps:
-            # Sammle update_timesteps Schritte
-            for _ in range(self.update_timesteps):
+        obs = self._get_state()
+        return obs, {}
 
-                walls = self.env.get_walls()
-                num_slots = self.env.get_num_walls()
-                min_distances = [float('inf')] * num_slots
+    def step(self, action):
+        _, _, done = self.env.step(action)
+        self.episode_frames += 1
 
-                for wall in walls:
-                    print(wall)
-                    if wall.distance > 0 and wall.enabled:
-                        min_distances[wall.slot % num_slots] = min(min_distances[wall.slot % num_slots], wall.distance)
+        # Wall-Info und Zustand
+        obs = self._get_state()
 
-                target_slot = min_distances.index(max(min_distances))
-                print({
-                    "Level": self.env.get_level(),
-                    "Player Angle": self.env.get_triangle_angle(),
-                    "World Angle": self.env.get_world_angle(),
-                    "Number Slots": self.env.get_num_slots(),
-                    "Number Walls": self.env.get_num_walls(),
-                    "Player Slot": self.env.get_triangle_slot(),
-                    "Target Slot": target_slot
-                })
+        # Reward
+        reward = self._get_reward(done)
 
-                action, log_prob, value = self.select_action(None)
-                next_obs, _, done = self.env.step(action)
+        # Falls du eine maximale Episodenlänge haben möchtest, kannst du hier
+        # done oder truncated setzen. Hier nur done = True, truncated = False.
+        return obs, reward, done, False, {}
 
-                if done:
-                    print(f"Episode {episode} beendet nach {episode_frames} Frames, Reward: {episode_reward:.2f}")
-                    self.env.reset()
-                    episode += 1
-                    episode_reward = 0
-                    episode_frames = 0
+    def _compute_wall_info(self):
+        """Gibt für jeden Slot den minimalen Abstand zur Wand zurück (continuous distances)."""
+        min_distances = np.full(self.n_slots, np.inf, dtype=np.float32)
+        for wall in self.env.get_walls():
+            if wall.distance > 0 and wall.enabled:
+                slot_idx = wall.slot % self.n_slots
+                min_distances[slot_idx] = min(min_distances[slot_idx], wall.distance)
 
-if __name__ == '__main__':
-    trainer = PPOTrainer(
-        n_frames=4,
-        n_actions=3,
-        total_timesteps=1_000_000,
-        update_timesteps=2048,
-        device='cuda'
+        # Ersetze Inf durch 0
+        min_distances[min_distances == np.inf] = 0.0
+        return min_distances
+
+    def _get_state(self):
+        wall_info = self._compute_wall_info()
+
+        # Player slot als One-Hot:
+        player_slot_idx = self.env.get_triangle_slot()
+        player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
+        player_slot_onehot[player_slot_idx] = 1.0
+
+        # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
+        best_slot_idx = np.argmax(wall_info)
+        best_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
+        best_slot_onehot[best_slot_idx] = 1.0
+
+        # Beispiel: Wir wollen den Level als float beibehalten:
+        base_state = np.array(
+            [
+                self.env.get_level(),
+                # self.env.get_triangle_angle(),
+                # self.env.get_num_slots(),
+                # self.env.get_num_walls(),
+                # self.env.get_world_angle(),
+            ],
+            dtype=np.float32,
+        )
+
+        # Rohzustand: [base_state, wall_info, player_slot_onehot, best_slot_onehot]
+        state_raw = np.concatenate(
+            [base_state, wall_info, player_slot_onehot, best_slot_onehot]
+        )
+
+        # Normieren/Clippen (optional, hier Tanh-Beispiel)
+        norm_factor = np.max(np.abs(state_raw)) + 1e-8
+        state_norm = np.clip(np.tanh(state_raw / norm_factor), -1, 1)
+        return state_norm
+
+    def _get_reward(self, done):
+        """Gibt nur Survival-Reward + moderate Strafe bei 'done'."""
+        if done:
+            return -1.0  # moderate Strafe für Tod
+        else:
+            return 0.1  # kleine Belohnung pro überlebtem Schritt
+
+    def render(self, mode="human"):
+        pass
+
+
+if __name__ == "__main__":
+    env = SuperHexagonGymEnv()
+    model = PPO(
+        policy="MlpPolicy",
+        env=env,
+        verbose=1,
+        device="cpu",
+        n_steps=2048,
+        batch_size=64,
+        learning_rate=3e-4,
+        gamma=0.999,
+        gae_lambda=0.95,
+        ent_coef=0.005,
+        vf_coef=0.7,
+        max_grad_norm=0.5,
+        policy_kwargs=dict(net_arch=[128, 128]),
     )
-    trainer.train()
+    model.learn(total_timesteps=1_000_000)
