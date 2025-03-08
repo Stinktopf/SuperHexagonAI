@@ -1,3 +1,5 @@
+from math import floor
+
 from pyrlhook import GameInterface, PixelFormat, PixelDataType
 import cv2
 import os
@@ -42,7 +44,7 @@ class SuperHexagonInterface:
     def __init__(
             self,
             frame_skip=4,
-            super_hexagon_path='C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
+            super_hexagon_path='G:\\SteamLibrary\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
             run_afap=True,
             record=False,
             allow_game_restart=False
@@ -63,7 +65,7 @@ class SuperHexagonInterface:
         else:
             self._attach_game()
 
-        self.level = self._get_level()
+        self.level = self.get_level()
 
     def _esc(self, down):
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x42877], 1 if down else 0)
@@ -85,15 +87,15 @@ class SuperHexagonInterface:
     def _space(self, down):
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x4287C], 1 if down else 0)
 
-    def _get_level(self):
-        t = self.game.read_byte('superhexagon.exe', [0x00294B00, 0x54CC])
-        return (-t) % 6
-
     def _get_main_menu_selection(self):
         return self.game.read_byte('superhexagon.exe', [0x00294B00, 0x111EC])
 
     def _get_current_menu(self):
         return self.game.read_byte('superhexagon.exe', [0x00294B00, 0x48])
+
+    def get_level(self):
+        t = self.game.read_byte('superhexagon.exe', [0x00294B00, 0x54CC])
+        return (-t) % 6
 
     def get_triangle_angle(self):
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2958])
@@ -101,11 +103,47 @@ class SuperHexagonInterface:
     def get_world_angle(self):
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1AC])
 
+    def get_num_slots(self):
+        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1BC])
+
+    def get_num_walls(self):
+        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2930])
+
+    def get_triangle_slot(self):
+        return floor(self.get_triangle_angle() / 360.0 * self.get_num_slots())
+
     def get_n_survived_frames(self):
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2988])
 
     def _reset_rotation(self):
         self.game.write_dword('superhexagon.exe', [0x00294B00, 0x1AC], 1)
+
+    def get_walls(self):
+        num_walls = self.get_num_walls()
+        walls = []
+
+        for i in range(num_walls):
+            base_addr = 0x220 + i * 20  # Each Wall struct is 20 bytes (0x14)
+            slot = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr])
+            distance = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 4])
+            enabled = self.game.read_byte('superhexagon.exe', [0x00294B00, base_addr + 8])
+            fill = [] # Padding to align dwords
+            for j in range(3):
+                fill.append(self.game.read_byte('superhexagon.exe', [0x00294B00, base_addr + 9 + j]))
+
+            unk2 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 12])
+            unk3 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 16])
+
+            walls.append({
+                'slot': slot,
+                'distance': distance,
+                'enabled': enabled,
+                'fill': fill,
+                'unk2': unk2,
+                'unk3': unk3
+            })
+
+        return walls
 
     def _restart_game(self):
         assert self.allow_game_restart, "in order to restart the game 'allow_game_restart' must be set to True"
@@ -242,7 +280,7 @@ class SuperHexagonInterface:
 
     def step(self, action):
 
-        # sleep(.05)
+        sleep(1.0)
         if action == 1:
             self._left(True)
         elif action == 2:
