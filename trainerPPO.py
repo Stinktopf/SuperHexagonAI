@@ -1,3 +1,5 @@
+import math
+
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -19,7 +21,7 @@ class SuperHexagonGymEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(2 + 2 * self.n_slots,), # Add a comma to make it a tuple
+            shape=(2 + 2 * self.n_slots,),  # Add a comma to make it a tuple
             dtype=np.float32,
         )
         self.episode_frames = 0
@@ -40,7 +42,7 @@ class SuperHexagonGymEnv(gym.Env):
         obs = self._get_state()
 
         # Reward
-        reward = self._get_reward(done)
+        reward = self._get_reward(done, action)
 
         # Falls du eine maximale Episodenlänge haben möchtest, kannst du hier
         # done oder truncated setzen. Hier nur done = True, truncated = False.
@@ -55,21 +57,21 @@ class SuperHexagonGymEnv(gym.Env):
                 min_distances[slot_idx] = min(min_distances[slot_idx], wall.distance)
 
         # Ersetze Inf durch 0
-        min_distances[min_distances == np.inf] = 0.0
+        min_distances[min_distances == np.inf] = 5000.0
         return min_distances
 
     def _get_state(self):
         wall_info = self._compute_wall_info()
         wall_info = wall_info / wall_info.sum()
 
-        player_angle = np.array([self.env.get_triangle_angle() / 360])
+        player_angle = np.array([math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))])
 
         # Player slot als One-Hot:
         player_slot_idx = self.env.get_triangle_slot()
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
 
-        # # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
+        # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
         # best_slot_idx = np.argmax(wall_info)
         # best_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         # best_slot_onehot[best_slot_idx] = 1.0
@@ -98,12 +100,29 @@ class SuperHexagonGymEnv(gym.Env):
 
         return state
 
-    def _get_reward(self, done):
-        """Gibt nur Survival-Reward + moderate Strafe bei 'done'."""
+    def _get_reward(self, done, action):
+        wall_info = self._compute_wall_info()
+        wall_info = wall_info / wall_info.sum()
+
+        player_slot = self.env.get_triangle_slot()
+
+        reward = 0
+
         if done:
-            return -100.0  # moderate Strafe für Tod
+            return -100
+
+        reward += 0.1
+        if wall_info[player_slot] > wall_info.min():
+            # print("CORRECT", player_slot, wall_info[player_slot], wall_info.min())
+            if action == 0:
+                reward *= 2.5
+            else:
+                reward *= 2
         else:
-            return 0.1  # kleine Belohnung pro überlebtem Schritt
+            # print("INCORRECT", player_slot, wall_info[player_slot], wall_info.min())
+            reward *= -1
+
+        return reward
 
     def render(self, mode="human"):
         pass

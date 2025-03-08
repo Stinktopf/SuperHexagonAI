@@ -86,9 +86,9 @@ class SuperHexagonInterface:
         self.level = self.get_level()
 
         self.paused = False
-        keyboard.add_hotkey("space", self.toggle_pause)
+        keyboard.add_hotkey("ctrl+space", self.toggle_pause)
         self.slow_mode = False
-        keyboard.add_hotkey("alt", self.toggle_slow_mode)
+        keyboard.add_hotkey("ctrl+alt", self.toggle_slow_mode)
 
     def toggle_pause(self):
         self.paused = not self.paused
