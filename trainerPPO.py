@@ -17,9 +17,9 @@ class SuperHexagonGymEnv(gym.Env):
 
         self.n_slots = self.env.get_num_slots()
         self.observation_space = spaces.Box(
-            low=-1.0,
+            low=0.0,
             high=1.0,
-            shape=(1 + 3 * self.n_slots,),
+            shape=(2 + 2 * self.n_slots,), # Add a comma to make it a tuple
             dtype=np.float32,
         )
         self.episode_frames = 0
@@ -60,16 +60,19 @@ class SuperHexagonGymEnv(gym.Env):
 
     def _get_state(self):
         wall_info = self._compute_wall_info()
+        wall_info = wall_info / wall_info.sum()
+
+        player_angle = np.array([self.env.get_triangle_angle() / 360])
 
         # Player slot als One-Hot:
         player_slot_idx = self.env.get_triangle_slot()
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
 
-        # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
-        best_slot_idx = np.argmax(wall_info)
-        best_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
-        best_slot_onehot[best_slot_idx] = 1.0
+        # # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
+        # best_slot_idx = np.argmax(wall_info)
+        # best_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
+        # best_slot_onehot[best_slot_idx] = 1.0
 
         # Beispiel: Wir wollen den Level als float beibehalten:
         base_state = np.array(
@@ -83,20 +86,22 @@ class SuperHexagonGymEnv(gym.Env):
             dtype=np.float32,
         )
 
-        # Rohzustand: [base_state, wall_info, player_slot_onehot, best_slot_onehot]
-        state_raw = np.concatenate(
-            [base_state, wall_info, player_slot_onehot, best_slot_onehot]
+        # print("Base State", base_state)
+        # print("Wall Info", wall_info)
+        # print("Player Slot", player_slot_onehot)
+        # print("Player Rotation", player_angle)
+
+        # Rohzustand: [base_state, wall_info, player_slot_onehot]
+        state = np.concatenate(
+            [base_state, wall_info, player_slot_onehot, player_angle]
         )
 
-        # Normieren/Clippen (optional, hier Tanh-Beispiel)
-        norm_factor = np.max(np.abs(state_raw)) + 1e-8
-        state_norm = np.clip(np.tanh(state_raw / norm_factor), -1, 1)
-        return state_norm
+        return state
 
     def _get_reward(self, done):
         """Gibt nur Survival-Reward + moderate Strafe bei 'done'."""
         if done:
-            return -1.0  # moderate Strafe für Tod
+            return -100.0  # moderate Strafe für Tod
         else:
             return 0.1  # kleine Belohnung pro überlebtem Schritt
 
