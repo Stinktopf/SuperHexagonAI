@@ -56,7 +56,7 @@ class SuperHexagonGymEnv(gym.Env):
                 slot_idx = wall.slot % self.n_slots
                 min_distances[slot_idx] = min(min_distances[slot_idx], wall.distance)
 
-        # Ersetze Inf durch 0
+        # Ersetze Inf durch 5000.0
         min_distances[min_distances == np.inf] = 5000.0
         return min_distances
 
@@ -71,29 +71,15 @@ class SuperHexagonGymEnv(gym.Env):
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
 
-        # "Bester Slot" (größter Abstand) ebenfalls One-Hot:
-        # best_slot_idx = np.argmax(wall_info)
-        # best_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
-        # best_slot_onehot[best_slot_idx] = 1.0
-
         # Beispiel: Wir wollen den Level als float beibehalten:
         base_state = np.array(
             [
                 self.env.get_level(),
-                # self.env.get_triangle_angle(),
-                # self.env.get_num_slots(),
-                # self.env.get_num_walls(),
-                # self.env.get_world_angle(),
             ],
             dtype=np.float32,
         )
 
-        # print("Base State", base_state)
-        # print("Wall Info", wall_info)
-        # print("Player Slot", player_slot_onehot)
-        # print("Player Rotation", player_angle)
-
-        # Rohzustand: [base_state, wall_info, player_slot_onehot]
+        # Rohzustand: [base_state, wall_info, player_slot_onehot, player_angle]
         state = np.concatenate(
             [base_state, wall_info, player_slot_onehot, player_angle]
         )
@@ -113,13 +99,12 @@ class SuperHexagonGymEnv(gym.Env):
 
         reward += 0.1
         if wall_info[player_slot] > wall_info.min():
-            # print("CORRECT", player_slot, wall_info[player_slot], wall_info.min())
+            # Korrekte Bewegung in Richtung der sichereren Zone
             if action == 0:
                 reward *= 2.5
             else:
                 reward *= 2
         else:
-            # print("INCORRECT", player_slot, wall_info[player_slot], wall_info.min())
             reward *= -1
 
         return reward
@@ -140,9 +125,9 @@ if __name__ == "__main__":
         learning_rate=3e-4,
         gamma=0.999,
         gae_lambda=0.95,
-        ent_coef=0.005,
+        ent_coef=0.01,
         vf_coef=0.7,
         max_grad_norm=0.5,
         policy_kwargs=dict(net_arch=[128, 128]),
     )
-    model.learn(total_timesteps=1_000_000)
+    model.learn(total_timesteps=100_000_000)
