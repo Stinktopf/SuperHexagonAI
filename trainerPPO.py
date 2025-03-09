@@ -95,8 +95,7 @@ class SuperHexagonGymEnv(gym.Env):
         if done:
             if debug:
                 print("Game over! Return -10")
-            #return -10.0
-            return 0.0
+            return -5.0
 
         distances = self._compute_wall_info()
         n = len(distances)  # Anzahl Slots
@@ -135,19 +134,21 @@ class SuperHexagonGymEnv(gym.Env):
         # Kreisförmige Distanz neu
         new_dist = self.circular_distance(new_slot, best_slot, n)
 
+        reward = 1.0
+
         # Basierender "Reward" (näher, weiter oder gleich?)
         if new_dist < old_dist:
-            reward = +1.0 * new_dist
+            reward += +2.0 * (old_dist - new_dist)
             direction_info = "Spin good"
 
             if action == self.last_action:
-                reward += 2.0
+                reward += 1.0
                 strategy_info = "Strategy maintained"
             else:
                 strategy_info = "Strategy changed"
 
         elif new_dist > old_dist:
-            reward = -1.0 * new_dist
+            reward += -2.0 * (new_dist - old_dist)
             direction_info = "Spin bad"
 
             if action == self.last_action:
@@ -155,7 +156,7 @@ class SuperHexagonGymEnv(gym.Env):
             else:
                 strategy_info = "Strategy changed"
         elif new_dist > 0:
-            reward = -2.0
+            reward += -1.0
             direction_info = "Stay bad"
 
             if action == self.last_action:
@@ -163,7 +164,7 @@ class SuperHexagonGymEnv(gym.Env):
             else:
                 strategy_info = "Strategy changed"
         else:
-            reward = +2.0 # Fördert kantenhocken, verhindert aber auch abwandern...
+            reward += +1.0
             direction_info = "Stay good"
 
             if action == self.last_action:
@@ -171,6 +172,22 @@ class SuperHexagonGymEnv(gym.Env):
                 strategy_info = "Strategy maintained"
             else:
                 strategy_info = "Strategy changed"
+        
+        # Incentivice good strategy changes
+        if action != self.last_action and new_dist < old_dist:
+            reward += 2.0
+
+        # Prevent bad slots
+        if new_slot != best_slot and distances[new_slot] < 500.0 and distances[player_slot] >= distances[new_slot]:
+            reward += -4.0
+
+        # If only one exit incentive good behavior towards this exit heavily
+        unique_values = np.unique(distances)
+        if len(unique_values) == 2 and np.count_nonzero(distances == np.max(distances)) == 1 and player_slot != best_slot:
+            if new_dist < old_dist:
+                reward += 5.0
+            else:
+                reward -= 5.0
 
         # Erstelle One-Hot Arrays für Player- und Best-Slot
         player_one_hot = [0] * n
