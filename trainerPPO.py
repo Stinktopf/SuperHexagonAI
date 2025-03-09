@@ -1,5 +1,4 @@
 import math
-
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -21,16 +20,17 @@ class SuperHexagonGymEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(2 + 2 * self.n_slots,),  # Add a comma to make it a tuple
+            shape=(2 + 2 * self.n_slots + 3,),
             dtype=np.float32,
         )
         self.episode_frames = 0
+        self.last_action = 0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.env.reset()
         self.episode_frames = 0
-
+        self.last_action = 0
         obs = self._get_state()
         return obs, {}
 
@@ -38,14 +38,9 @@ class SuperHexagonGymEnv(gym.Env):
         _, _, done = self.env.step(action)
         self.episode_frames += 1
 
-        # Wall-Info und Zustand
         obs = self._get_state()
-
-        # Reward
         reward = self._get_reward(done, action)
-
-        # Falls du eine maximale Episodenlänge haben möchtest, kannst du hier
-        # done oder truncated setzen. Hier nur done = True, truncated = False.
+        self.last_action = action
         return obs, reward, done, False, {}
 
     def _compute_wall_info(self):
@@ -56,7 +51,6 @@ class SuperHexagonGymEnv(gym.Env):
                 slot_idx = wall.slot % self.n_slots
                 min_distances[slot_idx] = min(min_distances[slot_idx], wall.distance)
 
-        # Ersetze Inf durch 5000.0
         min_distances[min_distances == np.inf] = 5000.0
         return min_distances
 
@@ -68,24 +62,27 @@ class SuperHexagonGymEnv(gym.Env):
             [math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))]
         )
 
-        # Player slot als One-Hot:
         player_slot_idx = self.env.get_triangle_slot()
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
 
-        # Beispiel: Wir wollen den Level als float beibehalten:
         base_state = np.array(
-            [
-                self.env.get_level(),
-            ],
+            [self.env.get_level()],
             dtype=np.float32,
         )
 
-        # Rohzustand: [base_state, wall_info, player_slot_onehot, player_angle]
-        state = np.concatenate(
-            [base_state, wall_info, player_slot_onehot, player_angle]
-        )
+        last_action_onehot = np.zeros(3, dtype=np.float32)
+        last_action_onehot[self.last_action] = 1.0
 
+        state = np.concatenate(
+            [
+                base_state,
+                wall_info,
+                player_slot_onehot,
+                last_action_onehot,
+                player_angle,
+            ]
+        )
         return state
 
     def circular_distance(self, i, j, n):
@@ -93,23 +90,21 @@ class SuperHexagonGymEnv(gym.Env):
         return min(diff, n - diff)
 
     def _get_reward(self, done, action):
-        debug = True
+        debug = self.env.debug_mode
 
-        # Falls das Spiel vorbei ist => hoher Malus
         if done:
             if debug:
                 print("Game over! Return -10")
-            return -10.0
+            #return -10.0
+            return 0.0
 
-        distances = self._compute_wall_info()  # Array mit n Werten
+        distances = self._compute_wall_info()
         n = len(distances)  # Anzahl Slots
         player_slot = self.env.get_triangle_slot()
 
         # Zunächst Kandidaten finden, bei denen distance > 1000 gilt
         candidate_indices = np.nonzero(distances > 1000)[0]
-
         if candidate_indices.size > 0:
-            # Aus den Kandidaten: Wähle denjenigen, der den geringsten kreisförmigen Abstand zum Spieler hat.
             best_slot = int(
                 min(
                     candidate_indices,
@@ -117,7 +112,6 @@ class SuperHexagonGymEnv(gym.Env):
                 )
             )
         else:
-            # Falls keine Kandidaten vorhanden sind: Nimm den maximalen Slot (wie bisher)
             max_val = np.max(distances)
             max_indices = np.nonzero(distances == max_val)[0]
             best_slot = int(
@@ -132,9 +126,9 @@ class SuperHexagonGymEnv(gym.Env):
 
         # Aktion ausführen (1=links, 2=rechts, 0=bleiben) - modulo n
         if action == 1:
-            new_slot = (player_slot - 1) % n
-        elif action == 2:
             new_slot = (player_slot + 1) % n
+        elif action == 2:
+            new_slot = (player_slot - 1) % n
         else:
             new_slot = player_slot
 
@@ -143,17 +137,40 @@ class SuperHexagonGymEnv(gym.Env):
 
         # Basierender "Reward" (näher, weiter oder gleich?)
         if new_dist < old_dist:
-            reward = +0.2
+            reward = +1.0 * new_dist
             direction_info = "Spin good"
+
+            if action == self.last_action:
+                reward += 2.0
+                strategy_info = "Strategy maintained"
+            else:
+                strategy_info = "Strategy changed"
+
         elif new_dist > old_dist:
-            reward = -0.2
+            reward = -1.0 * new_dist
             direction_info = "Spin bad"
+
+            if action == self.last_action:
+                strategy_info = "Strategy maintained"
+            else:
+                strategy_info = "Strategy changed"
         elif new_dist > 0:
-            reward = -0.3
+            reward = -2.0
             direction_info = "Stay bad"
+
+            if action == self.last_action:
+                strategy_info = "Strategy maintained"
+            else:
+                strategy_info = "Strategy changed"
         else:
-            reward = +0.1
+            reward = +2.0 # Fördert kantenhocken, verhindert aber auch abwandern...
             direction_info = "Stay good"
+
+            if action == self.last_action:
+                reward += 1.0
+                strategy_info = "Strategy maintained"
+            else:
+                strategy_info = "Strategy changed"
 
         # Erstelle One-Hot Arrays für Player- und Best-Slot
         player_one_hot = [0] * n
@@ -172,6 +189,7 @@ class SuperHexagonGymEnv(gym.Env):
                 f"Old Distance: {old_dist:.2f} | New Slot: {new_slot} | New Distance: {new_dist:.2f}"
             )
             print(f"Action Taken: {action} | {direction_info}")
+            print(f"{strategy_info}")
             print(f"Calculated Reward: {reward}")
             print("-------------------------------------------------------\n")
 
@@ -209,7 +227,7 @@ class EntropyCoefficientScheduler(BaseCallback):
 
 if __name__ == "__main__":
     env = SuperHexagonGymEnv()
-    total_timesteps = 100_000_000
+    total_timesteps = 1_000_000
     model = PPO(
         policy="MlpPolicy",
         env=env,
