@@ -93,16 +93,16 @@ class SuperHexagonGymEnv(gym.Env):
         return min(diff, n - diff)
 
     def _get_reward(self, done, action):
-        debug = False
-        
+        debug = True
+
         # Falls das Spiel vorbei ist => hoher Malus
         if done:
             if debug:
-                print("Game over! Return -100")
-            return -100.0
+                print("Game over! Return -10")
+            return -10.0
 
         distances = self._compute_wall_info()  # Array mit n Werten
-        n = len(distances)                     # Anzahl Slots
+        n = len(distances)  # Anzahl Slots
         player_slot = self.env.get_triangle_slot()
 
         # Zunächst Kandidaten finden, bei denen distance > 1000 gilt
@@ -110,12 +110,22 @@ class SuperHexagonGymEnv(gym.Env):
 
         if candidate_indices.size > 0:
             # Aus den Kandidaten: Wähle denjenigen, der den geringsten kreisförmigen Abstand zum Spieler hat.
-            best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
+            best_slot = int(
+                min(
+                    candidate_indices,
+                    key=lambda idx: self.circular_distance(player_slot, idx, n),
+                )
+            )
         else:
             # Falls keine Kandidaten vorhanden sind: Nimm den maximalen Slot (wie bisher)
             max_val = np.max(distances)
             max_indices = np.nonzero(distances == max_val)[0]
-            best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
+            best_slot = int(
+                min(
+                    max_indices,
+                    key=lambda idx: self.circular_distance(player_slot, idx, n),
+                )
+            )
 
         # Kreisförmige Distanz alt
         old_dist = self.circular_distance(player_slot, best_slot, n)
@@ -133,17 +143,17 @@ class SuperHexagonGymEnv(gym.Env):
 
         # Basierender "Reward" (näher, weiter oder gleich?)
         if new_dist < old_dist:
-            reward = +0.3  * new_dist # Richtige Richtung
+            reward = +0.2
             direction_info = "Spin good"
         elif new_dist > old_dist:
-            reward = -0.1  * new_dist # Falsche Richtung
-            direction_info = "Sping bad"
+            reward = -0.2
+            direction_info = "Spin bad"
         elif new_dist > 0:
-            reward = -0.3  * old_dist # Stehen in einem schlechten Slot
-            direction_info = "Stay good"
-        else:
-            reward = +1.0  # Stehen im best_slot
+            reward = -0.3
             direction_info = "Stay bad"
+        else:
+            reward = +0.1
+            direction_info = "Stay good"
 
         # Erstelle One-Hot Arrays für Player- und Best-Slot
         player_one_hot = [0] * n
@@ -158,7 +168,9 @@ class SuperHexagonGymEnv(gym.Env):
             print(f"Player Slot: {player_slot} | Best Slot: {best_slot}")
             print(f"Player One-Hot: {player_one_hot}")
             print(f"Best   One-Hot: {best_one_hot}")
-            print(f"Old Distance: {old_dist:.2f} | New Slot: {new_slot} | New Distance: {new_dist:.2f}")
+            print(
+                f"Old Distance: {old_dist:.2f} | New Slot: {new_slot} | New Distance: {new_dist:.2f}"
+            )
             print(f"Action Taken: {action} | {direction_info}")
             print(f"Calculated Reward: {reward}")
             print("-------------------------------------------------------\n")
@@ -171,11 +183,13 @@ class SuperHexagonGymEnv(gym.Env):
 
 from stable_baselines3.common.callbacks import BaseCallback
 
+
 class EntropyCoefficientScheduler(BaseCallback):
     """
     Dieser Callback passt den ent_coef-Wert des Modells linear von
     initial_ent_coef auf final_ent_coef über total_timesteps an.
     """
+
     def __init__(self, total_timesteps, initial_ent_coef, final_ent_coef, verbose=0):
         super().__init__(verbose)
         self.total_timesteps = total_timesteps
@@ -185,7 +199,9 @@ class EntropyCoefficientScheduler(BaseCallback):
     def _on_step(self) -> bool:
         # Berechne den aktuellen Fortschritt (1.0 -> 0.0)
         progress = 1.0 - (self.num_timesteps / self.total_timesteps)
-        new_ent_coef = self.final_ent_coef + progress * (self.initial_ent_coef - self.final_ent_coef)
+        new_ent_coef = self.final_ent_coef + progress * (
+            self.initial_ent_coef - self.final_ent_coef
+        )
         # Aktualisiere den Wert im Modell
         self.model.ent_coef = new_ent_coef
         return True
@@ -199,7 +215,7 @@ if __name__ == "__main__":
         env=env,
         verbose=1,
         device="cpu",
-        n_steps=4096,
+        n_steps=2048,
         batch_size=64,
         learning_rate=3e-4,
         gamma=0.999,
@@ -207,13 +223,11 @@ if __name__ == "__main__":
         ent_coef=0.1,
         vf_coef=0.7,
         max_grad_norm=0.5,
-        policy_kwargs=dict(net_arch=[128, 128]),
+        policy_kwargs=dict(net_arch=[256, 256]),
     )
 
     ent_coef_scheduler = EntropyCoefficientScheduler(
-        total_timesteps=total_timesteps,
-        initial_ent_coef=0.1,
-        final_ent_coef=0.005
+        total_timesteps=total_timesteps, initial_ent_coef=0.1, final_ent_coef=0.005
     )
 
     model.learn(total_timesteps=total_timesteps, callback=ent_coef_scheduler)
