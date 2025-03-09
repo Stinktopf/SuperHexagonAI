@@ -64,7 +64,9 @@ class SuperHexagonGymEnv(gym.Env):
         wall_info = self._compute_wall_info()
         wall_info = wall_info / wall_info.sum()
 
-        player_angle = np.array([math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))])
+        player_angle = np.array(
+            [math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))]
+        )
 
         # Player slot als One-Hot:
         player_slot_idx = self.env.get_triangle_slot()
@@ -87,27 +89,51 @@ class SuperHexagonGymEnv(gym.Env):
         return state
 
     def _get_reward(self, done, action):
-        wall_info = self._compute_wall_info()
-        wall_info = wall_info / wall_info.sum()
+        # 1) Falls das Spiel vorbei ist, gib einen starken Malus
+        if done:
+            return -100.0
 
+        # 2) Hole das Distanz-Array
+        distances = (
+            self._compute_wall_info()
+        )  # => z.B. array(float32) mit length = n_slots
         player_slot = self.env.get_triangle_slot()
 
-        reward = 0
+        # 3) Bestimme das globale Minimum und Maximum
+        d_min = distances.min()
+        d_max = distances.max()
 
-        if done:
-            return -100
+        # 4) Falls alle Distanzen identisch sind
+        if d_min == d_max:
+            # dann sind alle Slots gleich gut, wir setzen auf 0.0 (mittig in [-0.1,0.1])
+            scaled = np.full_like(distances, 0.0)
+        else:
+            # a) Normalisierung auf [0,1]
+            x = (distances - d_min) / (d_max - d_min)
+            # b) Verschiebung auf [-0.1,0.1]
+            scaled = 0.2 * x - 0.1
 
-        reward += 0.1
-        if wall_info[player_slot] > wall_info.min():
-            # Korrekte Bewegung in Richtung der sichereren Zone
-            if action == 0:
+        # 5) Wert für den Player-Slot (in [-0.1,0.1])
+        reward = scaled[player_slot]
+
+        if action == 0:
+            # Aktion "Stehen"
+            if reward > 0:
+                # Richtiger Slot -> stark belohnen
                 reward *= 2.5
             else:
-                reward *= 2
+                # Falscher Slot -> stark bestrafen
+                reward *= 10
         else:
-            reward *= -1
+            # Aktion "Gehen"
+            if reward > 0:
+                # Richtiger Slot -> bestrafen
+                reward *= -1
+            else:
+                # Falscher Slot -> belohnen (das negative Reward "umdrehen")
+                reward *= -7.5
 
-        return reward
+        return float(reward)
 
     def render(self, mode="human"):
         pass
