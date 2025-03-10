@@ -62,7 +62,7 @@ class SuperHexagonInterface:
     def __init__(
             self,
             frame_skip=4,
-            super_hexagon_path='G:\\SteamLibrary\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
+            super_hexagon_path='C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
             run_afap=True,
             record=False,
             allow_game_restart=False
@@ -89,6 +89,8 @@ class SuperHexagonInterface:
         keyboard.add_hotkey("ctrl+space", self.toggle_pause)
         self.slow_mode = False
         keyboard.add_hotkey("ctrl+alt", self.toggle_slow_mode)
+        self.debug_mode = False
+        keyboard.add_hotkey("ctrl+d", self.toggle_debug_mode)
 
     def toggle_pause(self):
         self.paused = not self.paused
@@ -97,6 +99,10 @@ class SuperHexagonInterface:
     def toggle_slow_mode(self):
         self.slow_mode = not self.slow_mode
         print("Slow Mode Activated" if self.slow_mode else "Slow Mode Deactivated")
+
+    def toggle_debug_mode(self):
+        self.debug_mode = not self.debug_mode
+        print("Debug Mode Activated" if self.debug_mode else "Debug Mode Deactivated")
 
     def _esc(self, down):
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x42877], 1 if down else 0)
@@ -242,7 +248,7 @@ class SuperHexagonInterface:
             self.game.step(False)
 
         for _ in range(6):
-            if self._get_level() == level:
+            if self.get_level() == level:
                 break
 
             # select next level
@@ -307,7 +313,8 @@ class SuperHexagonInterface:
             sleep(0.1)
 
         if self.slow_mode:
-            sleep(0.1)
+            sleep(0.05)
+
 
         if action == 1:
             self._left(True)
