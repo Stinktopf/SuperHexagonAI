@@ -10,8 +10,7 @@ from utils import Network  # Teacher-Netz wird aus utils importiert
 class SuperHexagonGymEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
     
-    def __init__(self, teacher_net_path="super_hexagon_net", teacher_device="cuda",
-                 teacher_weight_decay_steps=100000):
+    def __init__(self, teacher_net_path="super_hexagon_net", teacher_device="cuda"):
         super().__init__()
         self.env = SuperHexagonInterface(frame_skip=1, run_afap=True, allow_game_restart=True)
         self.action_space = spaces.Discrete(3)  # Aktionen: 0 = Stay, 1 = Rechts, 2 = Links
@@ -41,8 +40,6 @@ class SuperHexagonGymEnv(gym.Env):
         self.teacher_net = Network(self.n_frames, SuperHexagonInterface.n_actions, self.n_atoms).to(self.teacher_device)
         self.teacher_net.load_state_dict(torch.load(teacher_net_path, map_location=self.teacher_device))
         self.teacher_net.eval()
-
-        self.teacher_weight_decay_steps = teacher_weight_decay_steps
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -75,22 +72,22 @@ class SuperHexagonGymEnv(gym.Env):
 
         # Einfacher Reward-Aufbau:
         # Basisreward:
-        base_reward = 1.0 / 3.0
-        # Falls Teacherempfehlung eingehalten:
+        base_reward = 0.25
         if action == teacher_action:
-            reward = 1.0  # entspricht Basis + Teacherbonus
-        # Falls Teacherempfehlung nicht eingehalten, aber traditionelle Empfehlung:
+            reward = 1.0  # Basis + Teacherbonus
         elif action == traditional_action:
-            reward = 2.0 / 3.0  # Basis + traditioneller Bonus
+            reward = 1.0  # Basis + traditioneller Bonus
         else:
             reward = base_reward
 
-        # Verdopple den Reward, wenn beide Empfehlungen erfüllt werden
         if (action == teacher_action) and (action == traditional_action):
-            reward *= 2.0
+            reward *= 3.0
+
+        if (action == self.last_action) and (action != teacher_action) and (action != traditional_action):
+            reward -= 1.0
 
         if self.env.debug_mode:
-            # Berechne One-Hot Vektoren für Spieler und Best-Slot (nur zur Veranschaulichung)
+            # Berechne One-Hot Vektoren für Spieler und Best-Slot (zur Veranschaulichung)
             player_slot = self.env.get_triangle_slot()
             wall_info = self._compute_wall_info()
             n = len(wall_info)
@@ -113,6 +110,7 @@ class SuperHexagonGymEnv(gym.Env):
             print(f"Finaler Reward: {reward:.2f}")
             print(f"Player One-Hot: {player_one_hot}")
             print(f"Best-Slot One-Hot: {best_one_hot}")
+            print(f"Wall-Info: {wall_info}")
             print("===================")
 
         self.last_action = action
@@ -135,7 +133,6 @@ class SuperHexagonGymEnv(gym.Env):
         n = len(distances)
         player_slot = self.env.get_triangle_slot()
 
-        # Ermittele den "besten" Slot
         candidate_indices = np.nonzero(distances > 1000)[0]
         if candidate_indices.size > 0:
             best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
@@ -144,7 +141,6 @@ class SuperHexagonGymEnv(gym.Env):
             max_indices = np.nonzero(distances == max_val)[0]
             best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
 
-        # Bestimme, welche Aktion (0, 1, 2) den Spieler näher an den bestmöglichen Slot bringt
         best_action = None
         best_new_dist = float('inf')
         for a in range(self.action_space.n):
@@ -172,14 +168,15 @@ class SuperHexagonGymEnv(gym.Env):
     def _get_state(self):
         wall_info = self._compute_wall_info()
         wall_info = wall_info / wall_info.sum()
-        player_angle = np.array([math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))])
+        angle_rad = math.radians(self.env.get_triangle_angle())
+        player_angle_sin = (math.sin(angle_rad) + 1) / 2
+        player_angle_cos = (math.cos(angle_rad) + 1) / 2
         player_slot_idx = self.env.get_triangle_slot()
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
-        base_state = np.array([self.env.get_level()], dtype=np.float32)
         last_action_onehot = np.zeros(3, dtype=np.float32)
         last_action_onehot[self.last_action] = 1.0
-        state = np.concatenate([base_state, wall_info, player_slot_onehot, last_action_onehot, player_angle])
+        state = np.concatenate([wall_info, player_slot_onehot, last_action_onehot, [player_angle_sin, player_angle_cos]])
         return state
 
     def circular_distance(self, i, j, n):
@@ -199,10 +196,10 @@ if __name__ == "__main__":
         device="cpu",
         n_steps=2048,
         batch_size=64,
-        learning_rate=3e-4,
-        gamma=0.999,
+        learning_rate=1e-4,
+        gamma=0.995,
         gae_lambda=0.95,
-        ent_coef=0.1,
+        ent_coef=0.25,
         vf_coef=0.7,
         max_grad_norm=0.5,
         policy_kwargs=dict(net_arch=[256, 256]),
