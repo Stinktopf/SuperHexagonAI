@@ -20,17 +20,16 @@ class SuperHexagonGymEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(2 + 2 * self.n_slots + 3,),
+            shape=(3 + self.n_slots,),  # Add a comma to make it a tuple
             dtype=np.float32,
         )
         self.episode_frames = 0
-        self.last_action = 0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.env.reset()
         self.episode_frames = 0
-        self.last_action = 0
+
         obs = self._get_state()
         return obs, {}
 
@@ -40,7 +39,6 @@ class SuperHexagonGymEnv(gym.Env):
 
         obs = self._get_state()
         reward = self._get_reward(done, action)
-        self.last_action = action
         return obs, reward, done, False, {}
 
     def _compute_wall_info(self):
@@ -59,7 +57,7 @@ class SuperHexagonGymEnv(gym.Env):
         wall_info = wall_info / wall_info.sum()
 
         player_angle = np.array(
-            [math.sin(0.5 + 0.5 * math.radians(self.env.get_triangle_angle()))]
+            [0.5 + 0.5 * math.sin(math.radians(self.env.get_triangle_angle()))]
         )
 
         player_slot_idx = self.env.get_triangle_slot()
@@ -71,23 +69,17 @@ class SuperHexagonGymEnv(gym.Env):
             dtype=np.float32,
         )
 
-        last_action_onehot = np.zeros(3, dtype=np.float32)
-        last_action_onehot[self.last_action] = 1.0
+        direction = np.array([self.get_direction()], dtype=np.float32)
 
         state = np.concatenate(
             [
                 base_state,
                 wall_info,
-                player_slot_onehot,
-                last_action_onehot,
                 player_angle,
+                direction
             ]
         )
         return state
-
-    def circular_distance(self, i, j, n):
-        diff = abs(i - j)
-        return min(diff, n - diff)
 
     def _get_reward(self, done, action):
         debug = self.env.debug_mode
@@ -95,122 +87,115 @@ class SuperHexagonGymEnv(gym.Env):
         if done:
             if debug:
                 print("Game over! Return -10")
-            return -5.0
+            return -10.0
 
-        distances = self._compute_wall_info()
-        n = len(distances)  # Anzahl Slots
+        wall_info = self._compute_wall_info()
+        wall_info = wall_info / wall_info.sum()
+
+        player_slot_idx = self.env.get_triangle_slot()
+        player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
+        player_slot_onehot[player_slot_idx] = 1.0
+
         player_slot = self.env.get_triangle_slot()
 
-        # Zunächst Kandidaten finden, bei denen distance > 1000 gilt
-        candidate_indices = np.nonzero(distances > 1000)[0]
-        if candidate_indices.size > 0:
-            best_slot = int(
-                min(
-                    candidate_indices,
-                    key=lambda idx: self.circular_distance(player_slot, idx, n),
-                )
-            )
+        reward = 1
+
+        distance = self.get_distance()
+        distance_factor = (distance/360)
+
+        if distance_factor == 0:
+            # Correct slot
+            if action == 0:
+                reward *= 1
+            else:
+                reward *= 0.7
         else:
-            max_val = np.max(distances)
-            max_indices = np.nonzero(distances == max_val)[0]
-            best_slot = int(
-                min(
-                    max_indices,
-                    key=lambda idx: self.circular_distance(player_slot, idx, n),
-                )
-            )
-
-        # Kreisförmige Distanz alt
-        old_dist = self.circular_distance(player_slot, best_slot, n)
-
-        # Aktion ausführen (1=links, 2=rechts, 0=bleiben) - modulo n
-        if action == 1:
-            new_slot = (player_slot + 1) % n
-        elif action == 2:
-            new_slot = (player_slot - 1) % n
-        else:
-            new_slot = player_slot
-
-        # Kreisförmige Distanz neu
-        new_dist = self.circular_distance(new_slot, best_slot, n)
-
-        reward = 1.0
-
-        # Basierender "Reward" (näher, weiter oder gleich?)
-        if new_dist < old_dist:
-            reward += +2.0 * (old_dist - new_dist)
-            direction_info = "Spin good"
-
-            if action == self.last_action:
-                reward += 1.0
-                strategy_info = "Strategy maintained"
-            else:
-                strategy_info = "Strategy changed"
-
-        elif new_dist > old_dist:
-            reward += -2.0 * (new_dist - old_dist)
-            direction_info = "Spin bad"
-
-            if action == self.last_action:
-                strategy_info = "Strategy maintained"
-            else:
-                strategy_info = "Strategy changed"
-        elif new_dist > 0:
-            reward += -1.0
-            direction_info = "Stay bad"
-
-            if action == self.last_action:
-                strategy_info = "Strategy maintained"
-            else:
-                strategy_info = "Strategy changed"
-        else:
-            reward += +1.0
-            direction_info = "Stay good"
-
-            if action == self.last_action:
-                reward += 1.0
-                strategy_info = "Strategy maintained"
-            else:
-                strategy_info = "Strategy changed"
-        
-        # Incentivice good strategy changes
-        if action != self.last_action and new_dist < old_dist:
-            reward += 2.0
-
-        # Prevent bad slots
-        if new_slot != best_slot and distances[new_slot] < 500.0 and distances[player_slot] >= distances[new_slot]:
-            reward += -4.0
-
-        # If only one exit incentive good behavior towards this exit heavily
-        unique_values = np.unique(distances)
-        if len(unique_values) == 2 and np.count_nonzero(distances == np.max(distances)) == 1 and player_slot != best_slot:
-            if new_dist < old_dist:
-                reward += 5.0
-            else:
-                reward -= 5.0
-
-        # Erstelle One-Hot Arrays für Player- und Best-Slot
-        player_one_hot = [0] * n
-        player_one_hot[player_slot] = 1
-        best_one_hot = [0] * n
-        best_one_hot[best_slot] = 1
+            reward *= - distance_factor
 
         # Visualisierung im Terminal
         if debug:
             print("-------------------------------------------------------")
-            print(f"Distances: {distances}")
-            print(f"Player Slot: {player_slot} | Best Slot: {best_slot}")
-            print(f"Player One-Hot: {player_one_hot}")
-            print(f"Best   One-Hot: {best_one_hot}")
-            print(
-                f"Old Distance: {old_dist:.2f} | New Slot: {new_slot} | New Distance: {new_dist:.2f}"
-            )
-            print(f"Action Taken: {action} | {direction_info}")
-            print(f"{strategy_info}")
+            # print(f"Distances: {distances}")
+            print(f"Player Angle: {self.env.get_triangle_angle()}")
+            print(f"Player Slot: {player_slot}")
+            print(f"Player One-Hot: {player_slot_onehot}")
+            print(f"Distance: {distance} and Factor {distance_factor}")
+            print(f"Action Taken: {action}")
+            print(f"State: {self._get_state()}")
             print(f"Calculated Reward: {reward}")
             print("-------------------------------------------------------\n")
 
         return float(reward)
+
+    def get_distance(self):
+        num_slots = self.env.get_num_slots()
+        wall_info = self._compute_wall_info()
+        wall_info = wall_info / wall_info.sum()
+
+        player_angle = self.env.get_triangle_angle()
+        player_slot = self.env.get_triangle_slot()
+
+        left_border = 0
+        right_border = 0
+
+        if wall_info[player_slot] > wall_info.min():
+            return 0
+
+        for i in range(player_slot, player_slot + num_slots):
+            index = i % num_slots
+            if wall_info[index] > wall_info.min():
+                left_border = index * (360 / num_slots)
+                break
+
+        for i in range(player_slot, player_slot - num_slots, -1):
+            index = i % num_slots
+            if wall_info[index] > wall_info.min():
+                right_border = (index + 1) * (360 / num_slots)
+                break
+
+        # Calculate the left distance
+        left_distance = min(abs(player_angle - left_border), 360 - abs(player_angle - left_border))
+        # Calculate the right distance
+        right_distance = min(abs(player_angle - right_border), 360 - abs(player_angle - right_border))
+
+        return min(left_distance, right_distance)
+
+    def get_direction(self):
+        num_slots = self.env.get_num_slots()
+        wall_info = self._compute_wall_info()
+        wall_info = wall_info / wall_info.sum()
+
+        player_angle = self.env.get_triangle_angle()
+        player_slot = self.env.get_triangle_slot()
+
+        left_border = 0
+        right_border = 0
+
+        if wall_info[player_slot] > wall_info.min():
+            return 0.5
+
+        for i in range(player_slot, player_slot + num_slots):
+            index = i % num_slots
+            if wall_info[index] > wall_info.min():
+                left_border = index * (360 / num_slots)
+                break
+
+        for i in range(player_slot, player_slot - num_slots, -1):
+            index = i % num_slots
+            if wall_info[index] > wall_info.min():
+                right_border = (index + 1) * (360 / num_slots)
+                break
+
+        # Calculate the left distance
+        left_distance = min(abs(player_angle - left_border), 360 - abs(player_angle - left_border))
+        # Calculate the right distance
+        right_distance = min(abs(player_angle - right_border), 360 - abs(player_angle - right_border))
+
+        # Determine direction
+        if left_distance < right_distance:
+            return 0.0  # Closest opening to the left
+        else:
+            return 1.0  # Closest opening to the right
 
     def render(self, mode="human"):
         pass
@@ -250,15 +235,15 @@ if __name__ == "__main__":
         env=env,
         verbose=1,
         device="cpu",
-        n_steps=2048,
-        batch_size=64,
-        learning_rate=3e-4,
+        n_steps=4096,
+        batch_size=32,
+        learning_rate=2e-4,
         gamma=0.999,
         gae_lambda=0.95,
-        ent_coef=0.1,
+        ent_coef=0.01,
         vf_coef=0.7,
         max_grad_norm=0.5,
-        policy_kwargs=dict(net_arch=[256, 256]),
+        policy_kwargs=dict(net_arch=[256, 256, 256]),
     )
 
     ent_coef_scheduler = EntropyCoefficientScheduler(
