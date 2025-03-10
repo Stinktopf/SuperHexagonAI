@@ -15,12 +15,14 @@ class SuperHexagonGymEnv(gym.Env):
         self.env = SuperHexagonInterface(frame_skip=1, run_afap=True, allow_game_restart=True)
         self.action_space = spaces.Discrete(3)  # Aktionen: 0 = Stay, 1 = Rechts, 2 = Links
 
-        # Vektorbasierter Zustand (traditioneller Reward)
         self.n_slots = self.env.get_num_slots()
+        # Wandinfo: 3 Werte pro Slot -> 3*n_slots (flach), aber intern 2D (n_slots,3)
+        # Spieler-Slot One-Hot: n_slots, Last-Action One-Hot: 3, Winkel: 2
+        obs_dim = 3 * self.n_slots + self.n_slots + 3 + 2
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(2 + 2 * self.n_slots + 3,),
+            shape=(obs_dim,),
             dtype=np.float32,
         )
 
@@ -71,7 +73,6 @@ class SuperHexagonGymEnv(gym.Env):
         traditional_action = self._get_traditional_recommendation()
 
         # Einfacher Reward-Aufbau:
-        # Basisreward:
         base_reward = 0.25
         if action == teacher_action:
             reward = 1.0  # Basis + Teacherbonus
@@ -87,19 +88,20 @@ class SuperHexagonGymEnv(gym.Env):
             reward -= 1.0
 
         if self.env.debug_mode:
-            # Berechne One-Hot Vektoren für Spieler und Best-Slot (zur Veranschaulichung)
+            # Debug-Ausgabe: Hier wollen wir die Wall-Info als 2D-Array (n_slots, 3) zeigen
             player_slot = self.env.get_triangle_slot()
-            wall_info = self._compute_wall_info()
-            n = len(wall_info)
-            candidate_indices = np.nonzero(wall_info > 1000)[0]
+            wall_info_2d = self._compute_wall_info_depth()  # 2D: (n_slots, 3)
+            # Aggregiere die 3 Werte pro Slot (z. B. das Minimum) für die Best-Slot-Berechnung:
+            aggregated = np.array([min(row) for row in wall_info_2d])
+            candidate_indices = np.nonzero(aggregated > 1000)[0]
             if candidate_indices.size > 0:
-                best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
+                best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, self.n_slots)))
             else:
-                max_val = np.max(wall_info)
-                max_indices = np.nonzero(wall_info == max_val)[0]
-                best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
-            player_one_hot = [0] * n
-            best_one_hot = [0] * n
+                max_val = np.max(aggregated)
+                max_indices = np.nonzero(aggregated == max_val)[0]
+                best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, self.n_slots)))
+            player_one_hot = [0] * self.n_slots
+            best_one_hot = [0] * self.n_slots
             player_one_hot[player_slot] = 1
             best_one_hot[best_slot] = 1
 
@@ -110,7 +112,7 @@ class SuperHexagonGymEnv(gym.Env):
             print(f"Finaler Reward: {reward:.2f}")
             print(f"Player One-Hot: {player_one_hot}")
             print(f"Best-Slot One-Hot: {best_one_hot}")
-            print(f"Wall-Info: {wall_info}")
+            print(f"Wall-Info (2D):\n{wall_info_2d}")
             print("===================")
 
         self.last_action = action
@@ -128,55 +130,78 @@ class SuperHexagonGymEnv(gym.Env):
         return teacher_action
 
     def _get_traditional_recommendation(self):
-        # Berechne die traditionelle Empfehlung basierend auf den Wandabständen
-        distances = self._compute_wall_info()
-        n = len(distances)
+        distances_2d = self._compute_wall_info_depth()  # 2D: (n_slots, 3)
+        # Aggregiere die 3 Werte pro Slot (z. B. Minimum)
+        aggregated = np.array([min(row) for row in distances_2d])
         player_slot = self.env.get_triangle_slot()
 
-        candidate_indices = np.nonzero(distances > 1000)[0]
+        candidate_indices = np.nonzero(aggregated > 1000)[0]
         if candidate_indices.size > 0:
-            best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
+            best_slot = int(min(candidate_indices, key=lambda idx: self.circular_distance(player_slot, idx, self.n_slots)))
         else:
-            max_val = np.max(distances)
-            max_indices = np.nonzero(distances == max_val)[0]
-            best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, n)))
+            max_val = np.max(aggregated)
+            max_indices = np.nonzero(aggregated == max_val)[0]
+            best_slot = int(min(max_indices, key=lambda idx: self.circular_distance(player_slot, idx, self.n_slots)))
 
         best_action = None
         best_new_dist = float('inf')
         for a in range(self.action_space.n):
             if a == 1:
-                new_slot = (player_slot + 1) % n
+                new_slot = (player_slot + 1) % self.n_slots
             elif a == 2:
-                new_slot = (player_slot - 1) % n
+                new_slot = (player_slot - 1) % self.n_slots
             else:
                 new_slot = player_slot
-            new_dist = self.circular_distance(new_slot, best_slot, n)
+            new_dist = self.circular_distance(new_slot, best_slot, self.n_slots)
             if new_dist < best_new_dist:
                 best_new_dist = new_dist
                 best_action = a
         return best_action
 
-    def _compute_wall_info(self):
-        min_distances = np.full(self.n_slots, np.inf, dtype=np.float32)
+    def _compute_wall_info_depth(self):
+        # Erzeuge ein Dictionary, das pro Slot eine Liste der Distanzen speichert.
+        walls_per_slot = {slot: [] for slot in range(self.n_slots)}
         for wall in self.env.get_walls():
             if wall.distance > 0 and wall.enabled:
                 slot_idx = wall.slot % self.n_slots
-                min_distances[slot_idx] = min(min_distances[slot_idx], wall.distance)
-        min_distances[min_distances == np.inf] = 5000.0
-        return min_distances
+                walls_per_slot[slot_idx].append(wall.distance)
+        
+        # Erstelle für jeden Slot eine Liste mit genau 3 Werten (fehlt etwas, wird mit 5000.0 aufgefüllt)
+        depth_info = []
+        for slot in range(self.n_slots):
+            distances = sorted(walls_per_slot[slot])
+            while len(distances) < 3:
+                distances.append(5000.0)
+            depth_info.append(distances[:3])
+        
+        # Rückgabe als 2D-Array (n_slots, 3)
+        return np.array(depth_info, dtype=np.float32)
 
     def _get_state(self):
-        wall_info = self._compute_wall_info()
-        wall_info = wall_info / wall_info.sum()
+        # Hole die 2D-Wandinfo, flache sie aber für den Zustandsvektor ab
+        wall_info_2d = self._compute_wall_info_depth()
+        wall_info_flat = wall_info_2d.flatten()
+        wall_info_flat = wall_info_flat / wall_info_flat.sum()
+
         angle_rad = math.radians(self.env.get_triangle_angle())
         player_angle_sin = (math.sin(angle_rad) + 1) / 2
         player_angle_cos = (math.cos(angle_rad) + 1) / 2
+        
         player_slot_idx = self.env.get_triangle_slot()
         player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
         player_slot_onehot[player_slot_idx] = 1.0
+        
         last_action_onehot = np.zeros(3, dtype=np.float32)
         last_action_onehot[self.last_action] = 1.0
-        state = np.concatenate([wall_info, player_slot_onehot, last_action_onehot, [player_angle_sin, player_angle_cos]])
+
+        # Zustandsvektor zusammenstellen:
+        # [Wandinfo (3*n_slots, flach), Spieler-Slot One-Hot (n_slots), Last-Action One-Hot (3), Winkel (2)]
+        state = np.concatenate([
+            wall_info_flat, 
+            player_slot_onehot, 
+            last_action_onehot, 
+            [player_angle_sin, player_angle_cos]
+        ])
         return state
 
     def circular_distance(self, i, j, n):
