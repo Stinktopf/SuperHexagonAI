@@ -1,243 +1,289 @@
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import math
-import matplotlib
-matplotlib.use('TkAgg')  # Wechsel zum TkAgg-Backend
-import matplotlib.pyplot as plt
-import torchvision.models as models
-from superhexagon import SuperHexagonInterface  # Vorausgesetzt, diese Schnittstelle ist vorhanden
+from utils import MemoryBuffer, Network, ExpLrDecay
+from superhexagon import SuperHexagonInterface
+from time import time
+import pickle
+import os
 
-# -------------------------------
-# Reward Shaping: konstante Belohnung pro Frame
-# -------------------------------
-def shape_reward(episode_frames, done):
-    if done:
-        return -50  # Feste Strafbelohnung beim Scheitern
-    else:
-        return 1    # Konstanter Überlebensbonus
 
-# -------------------------------
-# MobileNet-basierte Actor-Critic-Architektur
-# -------------------------------
-class MobileNetActorCritic(nn.Module):
-    def __init__(self, n_frames, n_actions):
-        super(MobileNetActorCritic, self).__init__()
-        self.n_actions = n_actions
-        
-        # Lade MobileNetV2 (ohne vortrainierte Gewichte)
-        mobilenet = models.mobilenet_v2(pretrained=False)
-        # Passe den ersten Convolution-Layer an: statt 3 Kanälen jetzt n_frames (z.B. 4 gestapelte Graustufenbilder)
-        mobilenet.features[0][0] = nn.Conv2d(n_frames, 32, kernel_size=3, stride=2, padding=1, bias=False)
-        self.features = mobilenet.features
-        self.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        
-        # MobileNetV2 liefert einen Feature-Vektor der Größe 1280
-        self.fc_policy = nn.Linear(1280, n_actions)
-        self.fc_value = nn.Linear(1280, 1)
-    
-    def forward(self, x):
-        # x: [Batch, n_frames, 60, 60]. Annahme: Pixel im Bereich 0-255.
-        x = x / 255.0
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        logits = self.fc_policy(x)
-        value = self.fc_value(x)
-        return logits, value
+class Trainer:
+    def __init__(
+            self,
+            capacity_per_level=500000,
+            warmup_steps=100000,
+            n_frames=4,
+            n_atoms=51,
+            v_min=-1,
+            v_max=0,
+            gamma=.99,
+            device='cuda',
+            batch_size=48,
+            lr=0.0000625 * 2,
+            lr_decay=0.99,
+            update_target_net_every=25000,
+            train_every=6,
+            frame_skip=4,
+            disable_noisy_after=2000000,
+            super_hexagon_path='C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
+            run_afap=True
+    ):
 
-# -------------------------------
-# PPO-Trainer mit MobileNet
-# -------------------------------
-class PPOMobileNetTrainer:
-    def __init__(self,
-                 n_frames=4,
-                 n_actions=3,
-                 lr=1e-4,
-                 gamma=0.99,
-                 gae_lambda=0.95,
-                 clip_epsilon=0.2,
-                 ppo_epochs=4,
-                 minibatch_size=64,
-                 total_timesteps=1_000_000,
-                 update_timesteps=2048,
-                 device='cuda'):
-        self.device = device
+        # training objects
+        self.memory_buffer = MemoryBuffer(
+            capacity_per_level,
+            SuperHexagonInterface.n_levels,
+            n_frames,
+            SuperHexagonInterface.frame_size,
+            SuperHexagonInterface.frame_size_cropped,
+            gamma,
+            device=device
+        )
+        self.net = Network(n_frames, SuperHexagonInterface.n_actions, n_atoms).to(device)
+        self.target_net = Network(n_frames, SuperHexagonInterface.n_actions, n_atoms).to(device)
+        self.target_net.load_state_dict(self.net.state_dict())
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr, eps=1.5e-4)
+        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, ExpLrDecay(lr_decay, min_factor=.1))
+
+        # parameters
+        self.batch_size = batch_size
+        self.update_target_net_every = update_target_net_every
+        self.train_every = train_every
+        self.frame_skip = frame_skip
+        self.disable_noisy_after = disable_noisy_after
+        self.warmup_steps = warmup_steps
         self.gamma = gamma
-        self.gae_lambda = gae_lambda
-        self.clip_epsilon = clip_epsilon
-        self.ppo_epochs = ppo_epochs
-        self.minibatch_size = minibatch_size
-        self.update_timesteps = update_timesteps
-        self.total_timesteps = total_timesteps
-        
-        # Entropie-Koeffizient (zur Förderung von Exploration)
-        self.entropy_coef = 0.01
-        
-        # Initialisiere die Umgebung
-        self.env = SuperHexagonInterface(frame_skip=4, run_afap=True, allow_game_restart=True)
-        state, _ = self.env.reset()
-        self.input_shape = (n_frames,) + state.shape
-        self.n_actions = n_actions
-        
-        # Erstelle das MobileNet-basierte Actor-Critic-Netzwerk
-        self.net = MobileNetActorCritic(n_frames, n_actions).to(device)
-        self.optimizer = optim.Adam(self.net.parameters(), lr=lr)
-        
-        # Live-Plotting zur Überwachung des Trainingsfortschritts
-        self.episode_rewards_history = []
-        self.episode_numbers = []
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-    
-    def update_plot(self, episode, reward):
-        # Aktualisiere den Plot nur alle 10 Episoden
-        if episode % 10 == 0:
-            self.episode_numbers.append(episode)
-            self.episode_rewards_history.append(reward)
-            self.ax.clear()
-            self.ax.plot(self.episode_numbers, self.episode_rewards_history, label='Reward pro Episode')
-            self.ax.set_xlabel('Episode')
-            self.ax.set_ylabel('Reward')
-            self.ax.legend()
-            plt.draw()
-            plt.pause(0.001)
-    
-    def select_action(self, state):
-        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-        logits, value = self.net(state_tensor)
-        probs = F.softmax(logits, dim=-1)
-        dist = torch.distributions.Categorical(probs)
-        action = dist.sample()
-        log_prob = dist.log_prob(action)  # Tensor, um den Gradientenfluss zu erhalten
-        return action.item(), log_prob, value, probs
-    
-    def compute_gae(self, rewards, values, dones, last_value):
-        advantages = []
-        gae = 0
-        # Hänge last_value an, um die Bootstrapping-Berechnung zu ermöglichen
-        values = values + [last_value]
-        for i in reversed(range(len(rewards))):
-            delta = rewards[i] + self.gamma * values[i+1] * (1 - dones[i]) - values[i]
-            gae = delta + self.gamma * self.gae_lambda * (1 - dones[i]) * gae
-            advantages.insert(0, gae)
-        returns = [adv + v for adv, v in zip(advantages, values[:-1])]
-        return advantages, returns
-    
-    def train(self):
-        # Initialisiere den Frame-Stack
-        state, _ = self.env.reset()
-        state_stack = np.stack([state] * 4, axis=0)
-        
-        timestep = 0
-        episode = 0
-        episode_reward = 0
-        episode_frames = 0
-        
-        # Speicher für Trajektorien
-        states, actions, log_probs, rewards, dones, values = [], [], [], [], [], []
-        
-        while timestep < self.total_timesteps:
-            # Sammle eine Trajektorie über update_timesteps Schritte
-            for _ in range(self.update_timesteps):
-                current_state = state_stack.copy()
-                action, log_prob, value, _ = self.select_action(current_state)
-                next_obs, _, done = self.env.step(action)
-                next_state, _ = next_obs
-                
-                reward = shape_reward(episode_frames, done)
-                
-                states.append(current_state)
-                actions.append(action)
-                log_probs.append(log_prob)
-                rewards.append(reward)
-                dones.append(float(done))
-                values.append(value.item())
-                
-                episode_reward += reward
-                episode_frames += 1
-                timestep += 1
-                
-                state_stack = np.concatenate(([next_state], state_stack[:-1]), axis=0)
-                
-                if done:
-                    print(f"Episode {episode} beendet nach {episode_frames} Frames, Reward: {episode_reward:.2f}")
-                    self.update_plot(episode, episode_reward)
-                    state, _ = self.env.reset()
-                    state_stack = np.stack([state] * 4, axis=0)
-                    episode += 1
-                    episode_reward = 0
-                    episode_frames = 0
-            
-            # Berechne den letzten Wert zum Bootstrapping
-            _, _, last_value, _ = self.select_action(state_stack)
-            last_value = last_value.item()
-            
-            # Berechne Advantages und Returns mit Generalized Advantage Estimation (GAE)
-            advantages, returns = self.compute_gae(rewards, values, dones, last_value)
-            
-            # Konvertiere gesammelte Daten in Tensors
-            states_tensor = torch.FloatTensor(np.array(states)).to(self.device)
-            actions_tensor = torch.LongTensor(actions).to(self.device)
-            old_log_probs_tensor = torch.stack(log_probs).to(self.device)
-            returns_tensor = torch.FloatTensor(returns).to(self.device)
-            advantages_tensor = torch.FloatTensor(advantages).to(self.device)
-            
-            # Normiere Advantages
-            advantages_tensor = (advantages_tensor - advantages_tensor.mean()) / (advantages_tensor.std() + 1e-8)
-            
-            dataset_size = states_tensor.size(0)
-            indices = np.arange(dataset_size)
-            
-            # Mehrere PPO-Epochen
-            for _ in range(self.ppo_epochs):
-                np.random.shuffle(indices)
-                for start in range(0, dataset_size, self.minibatch_size):
-                    end = start + self.minibatch_size
-                    mb_idx = indices[start:end]
-                    
-                    mb_states = states_tensor[mb_idx]
-                    mb_actions = actions_tensor[mb_idx]
-                    mb_old_log_probs = old_log_probs_tensor[mb_idx]
-                    mb_returns = returns_tensor[mb_idx]
-                    mb_advantages = advantages_tensor[mb_idx]
-                    
-                    logits, values_pred = self.net(mb_states)
-                    probs = F.softmax(logits, dim=-1)
-                    dist = torch.distributions.Categorical(probs)
-                    new_log_probs = dist.log_prob(mb_actions)
-                    
-                    ratio = torch.exp(new_log_probs - mb_old_log_probs)
-                    surr1 = ratio * mb_advantages
-                    surr2 = torch.clamp(ratio, 1 - self.clip_epsilon, 1 + self.clip_epsilon) * mb_advantages
-                    policy_loss = -torch.min(surr1, surr2).mean()
-                    
-                    value_loss = F.mse_loss(values_pred.squeeze(-1), mb_returns)
-                    entropy_loss = -dist.entropy().mean()
-                    
-                    loss = policy_loss + 0.5 * value_loss + self.entropy_coef * entropy_loss
-                    
-                    self.optimizer.zero_grad()
-                    loss.backward()
-                    self.optimizer.step()
-            
-            # Leere die Trajektorien-Speicher für den nächsten Update-Zyklus
-            states, actions, log_probs, rewards, dones, values = [], [], [], [], [], []
+        self.device = device
+
+        # parameters for distributional
+        self.n_atoms = n_atoms
+        self.v_min = v_min
+        self.v_max = v_max
+        self.delta_z = (v_max - v_min) / (n_atoms - 1)
+        self.support = torch.linspace(v_min, v_max, n_atoms, dtype=torch.float, device=device)
+        self.offset = torch.arange(0, batch_size * n_atoms, n_atoms, device=device).view(-1, 1)
+        self.m = torch.empty((batch_size, n_atoms), device=device)
+
+        # debug and logging stuff
+        self.list_steps_alive = [[] for _ in range(SuperHexagonInterface.n_levels)]
+        self.longest_run = [(0, 0)] * SuperHexagonInterface.n_levels
+        self.total_simulated_steps = [0] * SuperHexagonInterface.n_levels
+        self.losses = []
+        self.kls = []
+        self.times = []
+        self.iteration = 0
+
+        self.super_hexagon_path = super_hexagon_path
+        self.run_afap = run_afap
+
+    def warmup(self, game, log_every):
+        t = True
+        for i in range(1, self.warmup_steps + 1):
+            if i % log_every == 0:
+                print('Warmup', i)
+            if t:
+                self.total_simulated_steps[game.level] += game.simulated_steps
+                if self.total_simulated_steps[game.level] > self.total_simulated_steps[game.level - 1]:
+                    game.select_level((game.level + 1) % 6)
+                f, fc = game.reset()
+                self.memory_buffer.insert_first(game.level, f, fc)
+            a = np.random.randint(0, 3)
+            (f, fc), r, t = game.step(a)
+            self.memory_buffer.insert(game.level, a, r, t, f, fc)
+        return t
+
+    def train(
+            self,
+            save_every=50000,
+            save_name='trainer',
+            log_every=1000,
+    ):
+
+        game = SuperHexagonInterface(self.frame_skip, self.super_hexagon_path, run_afap=self.run_afap, allow_game_restart=True)
+
+        # if trainer was loaded, select the level that was played the least
+        if any(x != 0 for x in self.total_simulated_steps):
+            game.select_level(np.argmin(self.total_simulated_steps).item())
+
+        # init state
+        f, fc = np.zeros(game.frame_size, dtype=np.bool), np.zeros(game.frame_size_cropped, dtype=np.bool)
+        sf, sfc = torch.zeros((1, 4, *game.frame_size), device=self.device), torch.zeros((1, 4, *game.frame_size_cropped), device=self.device)
+        t = True
+
+        # run warmup is necessary
+        if self.iteration == 0:
+            if os.path.exists('warmup_buffer.npz'):
+                self.memory_buffer.load_warmup('warmup_buffer.npz')
+            else:
+                t = self.warmup(game, log_every)
+                self.memory_buffer.save_warmup('warmup_buffer.npz')
+
+        # trainings loop
+        last_time = time()
+        save_when_terminal = False
+        while True:
+
+            self.iteration += 1
+
+            # disable noisy
+            if self.iteration == self.disable_noisy_after:
+                self.net.eval()
+                self.target_net.eval()
+
+            # log
+            if self.iteration % log_every == 0 and all(len(l) > 0 for l in self.list_steps_alive):
+                print(f'{self.iteration} | '
+                      f'{[round(np.mean(np.array(l[-100:])[:, 1]) / 60, 2) for l in self.list_steps_alive]}s | '
+                      f'{[round(r[1] / 60, 2) for r in self.longest_run]}s | '
+                      f'{self.total_simulated_steps} | '
+                      f'{time() - last_time:.2f}s | '
+                      f'{np.mean(self.losses[-log_every:])} | '
+                      f'{np.mean(self.kls[-log_every:])} | '
+                      f'{self.lr_scheduler.get_last_lr()[0]} | '
+                      f'{game.level}')
+
+            # indicate that the trainer should be saved the next time the agent dies
+            if self.iteration % save_every == 0:
+                save_when_terminal = True
+
+            # update target net
+            if self.iteration % self.update_target_net_every == 0:
+                self.lr_scheduler.step()
+                self.target_net.load_state_dict(self.net.state_dict())
+
+            # if terminal
+            if t:
+                # select next level if this level was played at least as long as the previous level
+                if self.total_simulated_steps[game.level] > self.total_simulated_steps[game.level - 1]:
+                    game.select_level((game.level + 1) % 6)
+                f, fc = game.reset()
+                self.memory_buffer.insert_first(game.level, f, fc)
+                sf.zero_()
+                sfc.zero_()
+
+            # update state
+            sf[0, 1:] = sf[0, :-1].clone()
+            sfc[0, 1:] = sfc[0, :-1].clone()
+            sf[0, 0] = torch.from_numpy(f).to(self.device)
+            sfc[0, 0] = torch.from_numpy(fc).to(self.device)
+
+            # train
+            if self.iteration % self.train_every == 0:
+                loss, kl = self.train_batch()
+                self.losses.append(loss)
+                self.kls.append(kl)
+
+            # act
+            with torch.no_grad():
+                self.net.reset_noise()
+                a = (self.net(sf, sfc) * self.support).sum(dim=2).argmax(dim=1).item()
+            (f, fc), r, t = game.step(a)
+            self.memory_buffer.insert(game.level, a, r, t, f, fc)
+
+            # if terminal
+            if t:
+                if game.steps_alive > self.longest_run[game.level][1]:
+                    self.longest_run[game.level] = (self.iteration, game.steps_alive)
+                self.list_steps_alive[game.level].append((self.iteration, game.steps_alive))
+                self.total_simulated_steps[game.level] += game.simulated_steps
+                self.times.append(time() - last_time)
+
+                if save_when_terminal:
+                    print('saving...')
+                    for _ in range(60):
+                        game.game.step(False)
+                    self.save(save_name)
+                    for _ in range(60):
+                        game.game.step(False)
+                    save_when_terminal = False
+
+    def train_batch(self):
+
+        # sample minibatch
+        f, fc, a, r, t, f1, fc1 = self.memory_buffer.make_batch(self.batch_size)
+
+        # compute target q distribution
+        with torch.no_grad():
+            self.target_net.reset_noise()
+            qdn = self.target_net(f1, fc1)
+            an = (qdn * self.support).sum(dim=2).argmax(dim=1)
+
+        Tz = (r.unsqueeze(1) + t.logical_not().unsqueeze(1) * self.gamma * self.support).clamp_(self.v_min, self.v_max)
+        b = (Tz - self.v_min) / self.delta_z
+        l = b.floor().long()
+        u = b.ceil().long()
+
+        l[(u > 0) & (l == u)] -= 1
+        u[(l == u)] += 1
+
+        vdn = qdn.gather(1, an.view(-1, 1, 1).expand(self.batch_size, -1, self.n_atoms)).view(self.batch_size, self.n_atoms)
+        self.m.zero_()
+        self.m.view(-1).index_add_(0, (l + self.offset).view(-1), (vdn * (u - b)).view(-1))
+        self.m.view(-1).index_add_(0, (u + self.offset).view(-1), (vdn * (b - l)).view(-1))
+
+        # forward and backward pass
+        qld = self.net(f, fc, log=True)
+        vld = qld.gather(1, a.view(-1, 1, 1).expand(self.batch_size, -1, self.n_atoms)).view(self.batch_size, self.n_atoms)
+        loss = -torch.sum(self.m * vld, dim=1).mean()
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        kl = F.kl_div(vld.detach(), self.m, reduction='batchmean')
+        return loss.detach().item(), kl.item()
+
+    def save(self, file_name='trainer'):
+
+        # first backup the last save file
+        # in case anything goes wrong
+        file_name_backup = file_name + '_backup'
+        if os.path.exists(file_name):
+            os.rename(file_name, file_name_backup)
+
+        # save this object
+        with open(file_name, 'wb') as f:
+            pickle.dump(self, f)
+
+        # remove backup if nothing went wrong
+        if os.path.exists(file_name_backup):
+            os.remove(file_name_backup)
+
+    @staticmethod
+    def load(file_name='trainer'):
+        with open(file_name, 'rb') as f:
+            ret = pickle.load(f)
+            assert ret.memory_buffer.last_was_terminal
+            return ret
+
 
 if __name__ == '__main__':
-    trainer = PPOMobileNetTrainer(
-        n_frames=1,         # z.B. 4 gestapelte Graustufenbilder
-        n_actions=3,        # Aktionen: Halten, Rechts, Links
-        lr=1e-4,
-        gamma=0.99,
-        gae_lambda=0.95,
-        clip_epsilon=0.2,
-        ppo_epochs=4,
-        minibatch_size=64,
-        total_timesteps=1_000_000,
-        update_timesteps=2048,
-        device='cuda'
-    )
-    trainer.train()
+
+    save_name = 'super_hexagon_trainer'
+    load = os.path.exists(save_name)
+
+    if load:
+        trainer = Trainer.load(save_name)
+    else:
+        trainer = Trainer(
+            capacity_per_level=500000,
+            warmup_steps=100000,
+            n_frames=4,
+            n_atoms=51,
+            v_min=-1,
+            v_max=0,
+            gamma=.99,
+            device='cuda',
+            batch_size=48,
+            lr=0.0000625 * 2,
+            lr_decay=0.99,
+            update_target_net_every=25000,
+            train_every=6,
+            frame_skip=4,
+            disable_noisy_after=2000000,
+            super_hexagon_path='C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
+            run_afap=True
+        )
+
+    trainer.train(save_every=200000, save_name=save_name)
