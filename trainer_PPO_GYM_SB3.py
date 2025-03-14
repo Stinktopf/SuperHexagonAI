@@ -11,7 +11,7 @@ class SuperHexagonGymEnv(gym.Env):
     """
     Gym env for SuperHexagon.
     Actions: 0=Stay, 1=Left, 2=Right.
-    Observation: [level, norm wall distances, player angle, direction].
+    Observation: [norm wall distances, player angle, direction].
     """
 
     metadata = {"render_modes": ["human"]}
