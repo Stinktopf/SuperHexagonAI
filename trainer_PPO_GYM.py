@@ -9,10 +9,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
 
-#############################################
-# Environment (wie in deinem Stable Baselines Code)
-#############################################
-
 
 class SuperHexagonGymEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
@@ -22,13 +18,13 @@ class SuperHexagonGymEnv(gym.Env):
         self.env = SuperHexagonInterface(
             frame_skip=1, run_afap=True, allow_game_restart=True
         )
-        self.action_space = spaces.Discrete(3)  # Left, Right, Stay
+        self.action_space = spaces.Discrete(3)
 
         self.n_slots = self.env.get_num_slots()
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(3 + self.n_slots,),  # Basiswert, Wandinfo, Player-Angle, Direction
+            shape=(3 + self.n_slots,),
             dtype=np.float32,
         )
         self.episode_frames = 0
@@ -49,7 +45,6 @@ class SuperHexagonGymEnv(gym.Env):
         return obs, reward, done, False, {}
 
     def _compute_wall_info(self):
-        """Gibt für jeden Slot den minimalen Abstand zur Wand zurück (continuous distances)."""
         min_distances = np.full(self.n_slots, np.inf, dtype=np.float32)
         for wall in self.env.get_walls():
             if wall.distance > 0 and wall.enabled:
@@ -201,11 +196,6 @@ class SuperHexagonGymEnv(gym.Env):
         pass
 
 
-#############################################
-# Eigene PPO-Implementierung
-#############################################
-
-
 class ActorCritic(nn.Module):
     def __init__(self, input_dim, num_actions, net_arch):
         super(ActorCritic, self).__init__()
@@ -246,7 +236,7 @@ class PPOAgent:
         update_epochs=4,
     ):
         self.env = env
-        self.obs_shape = env.observation_space.shape  # (state_dim,)
+        self.obs_shape = env.observation_space.shape
         self.num_actions = env.action_space.n
 
         self.gamma = gamma
@@ -299,12 +289,11 @@ class PPOAgent:
     def learn(self):
         obs, _ = self.env.reset()
         ep_rewards = 0
-        episode_lengths = []  # Liste zur Speicherung der Episodenlängen
-        current_episode_length = 0  # Zähler für die aktuelle Episode
+        episode_lengths = []
+        current_episode_length = 0
         current_step = 0
 
         while current_step < self.total_timesteps:
-            # Speicher für Trajektorien
             observations = []
             actions = []
             logprobs = []
@@ -312,9 +301,8 @@ class PPOAgent:
             dones = []
             values = []
 
-            # Trajektorien sammeln
             for _ in range(self.n_steps):
-                current_episode_length += 1  # Schritt in der aktuellen Episode
+                current_episode_length += 1
                 obs_tensor = torch.FloatTensor(obs).to(self.device).unsqueeze(0)
                 logits, value = self.model(obs_tensor)
                 probs = torch.softmax(logits, dim=-1)
@@ -335,20 +323,16 @@ class PPOAgent:
                 current_step += 1
 
                 if done:
-                    # Speichern der aktuellen Episodenlänge und Reset des Zählers
                     episode_lengths.append(current_episode_length)
                     current_episode_length = 0
                     obs, _ = self.env.reset()
 
-                # Update entropy coefficient pro Schritt
                 self.update_ent_coef(current_step)
 
-            # Letzten Wert (für GAE)
             obs_tensor = torch.FloatTensor(obs).to(self.device).unsqueeze(0)
             _, last_value = self.model(obs_tensor)
             last_value = last_value.item()
 
-            # In NumPy umwandeln
             observations = np.array(observations, dtype=np.float32)
             actions = np.array(actions)
             logprobs = np.array(logprobs, dtype=np.float32)
@@ -357,17 +341,14 @@ class PPOAgent:
             values = np.array(values, dtype=np.float32)
 
             advantages, returns = self.compute_gae(rewards, values, dones, last_value)
-            # Normalisiere Advantages
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-            # Konvertiere in Torch-Tensoren
             observations = torch.FloatTensor(observations).to(self.device)
             actions = torch.LongTensor(actions).to(self.device)
             old_logprobs = torch.FloatTensor(logprobs).to(self.device)
             returns = torch.FloatTensor(returns).to(self.device)
             advantages = torch.FloatTensor(advantages).to(self.device)
 
-            # PPO Update: Mehrere Epochen, Mini-Batch-Updates
             dataset_size = observations.shape[0]
             indices = np.arange(dataset_size)
             for epoch in range(self.update_epochs):
