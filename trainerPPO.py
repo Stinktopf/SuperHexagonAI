@@ -4,6 +4,7 @@ from gymnasium import spaces
 import numpy as np
 from superhexagon import SuperHexagonInterface
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
 
 
 class SuperHexagonGymEnv(gym.Env):
@@ -20,7 +21,7 @@ class SuperHexagonGymEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(3 + self.n_slots,),  # Add a comma to make it a tuple
+            shape=(3 + self.n_slots,),
             dtype=np.float32,
         )
         self.episode_frames = 0
@@ -42,7 +43,6 @@ class SuperHexagonGymEnv(gym.Env):
         return obs, reward, done, False, {}
 
     def _compute_wall_info(self):
-        """Gibt für jeden Slot den minimalen Abstand zur Wand zurück (continuous distances)."""
         min_distances = np.full(self.n_slots, np.inf, dtype=np.float32)
         for wall in self.env.get_walls():
             if wall.distance > 0 and wall.enabled:
@@ -71,14 +71,7 @@ class SuperHexagonGymEnv(gym.Env):
 
         direction = np.array([self.get_direction()], dtype=np.float32)
 
-        state = np.concatenate(
-            [
-                base_state,
-                wall_info,
-                player_angle,
-                direction
-            ]
-        )
+        state = np.concatenate([base_state, wall_info, player_angle, direction])
         return state
 
     def _get_reward(self, done, action):
@@ -86,7 +79,7 @@ class SuperHexagonGymEnv(gym.Env):
 
         if done:
             if debug:
-                print("Game over! Return -10")
+                print("Game over! Return -10.0")
             return -10.0
 
         wall_info = self._compute_wall_info()
@@ -101,18 +94,16 @@ class SuperHexagonGymEnv(gym.Env):
         reward = 1
 
         distance = self.get_distance()
-        distance_factor = (distance/360)
+        distance_factor = distance / 360
 
         if distance_factor == 0:
-            # Correct slot
             if action == 0:
                 reward *= 1
             else:
                 reward *= 0.7
         else:
-            reward *= - distance_factor
+            reward *= -distance_factor
 
-        # Visualisierung im Terminal
         if debug:
             print("-------------------------------------------------------")
             # print(f"Distances: {distances}")
@@ -153,10 +144,13 @@ class SuperHexagonGymEnv(gym.Env):
                 right_border = (index + 1) * (360 / num_slots)
                 break
 
-        # Calculate the left distance
-        left_distance = min(abs(player_angle - left_border), 360 - abs(player_angle - left_border))
-        # Calculate the right distance
-        right_distance = min(abs(player_angle - right_border), 360 - abs(player_angle - right_border))
+        left_distance = min(
+            abs(player_angle - left_border), 360 - abs(player_angle - left_border)
+        )
+
+        right_distance = min(
+            abs(player_angle - right_border), 360 - abs(player_angle - right_border)
+        )
 
         return min(left_distance, right_distance)
 
@@ -186,30 +180,24 @@ class SuperHexagonGymEnv(gym.Env):
                 right_border = (index + 1) * (360 / num_slots)
                 break
 
-        # Calculate the left distance
-        left_distance = min(abs(player_angle - left_border), 360 - abs(player_angle - left_border))
-        # Calculate the right distance
-        right_distance = min(abs(player_angle - right_border), 360 - abs(player_angle - right_border))
+        left_distance = min(
+            abs(player_angle - left_border), 360 - abs(player_angle - left_border)
+        )
 
-        # Determine direction
+        right_distance = min(
+            abs(player_angle - right_border), 360 - abs(player_angle - right_border)
+        )
+
         if left_distance < right_distance:
-            return 0.0  # Closest opening to the left
+            return 0.0
         else:
-            return 1.0  # Closest opening to the right
+            return 1.0
 
     def render(self, mode="human"):
         pass
 
 
-from stable_baselines3.common.callbacks import BaseCallback
-
-
 class EntropyCoefficientScheduler(BaseCallback):
-    """
-    Dieser Callback passt den ent_coef-Wert des Modells linear von
-    initial_ent_coef auf final_ent_coef über total_timesteps an.
-    """
-
     def __init__(self, total_timesteps, initial_ent_coef, final_ent_coef, verbose=0):
         super().__init__(verbose)
         self.total_timesteps = total_timesteps
@@ -217,12 +205,11 @@ class EntropyCoefficientScheduler(BaseCallback):
         self.final_ent_coef = final_ent_coef
 
     def _on_step(self) -> bool:
-        # Berechne den aktuellen Fortschritt (1.0 -> 0.0)
         progress = 1.0 - (self.num_timesteps / self.total_timesteps)
         new_ent_coef = self.final_ent_coef + progress * (
             self.initial_ent_coef - self.final_ent_coef
         )
-        # Aktualisiere den Wert im Modell
+
         self.model.ent_coef = new_ent_coef
         return True
 
@@ -241,9 +228,9 @@ if __name__ == "__main__":
         gamma=0.999,
         gae_lambda=0.95,
         ent_coef=0.01,
-        vf_coef=0.7,
+        vf_coef=0.6,
         max_grad_norm=0.5,
-        policy_kwargs=dict(net_arch=[256, 256, 256]),
+        policy_kwargs=dict(net_arch=[512, 512, 256]),
     )
 
     ent_coef_scheduler = EntropyCoefficientScheduler(
