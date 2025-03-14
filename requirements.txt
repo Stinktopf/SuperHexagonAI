@@ -1,5 +1,11 @@
-torch
-torchvision
+torch~=2.6.0
+torchvision~=0.21.0
 torchaudio
-numpy
-opencv-python
+numpy~=2.1.1
+opencv-python~=4.11.0.86
+
+matplotlib~=3.10.1
+setuptools~=68.2.0
+
+keyboard~=0.13.5
+pyrlhook~=0.0.1

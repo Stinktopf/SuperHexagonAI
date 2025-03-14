@@ -5,3 +5,5 @@ RLHookLib/.idea/
 RLHookLib/cmake-build-debug/
 RLHookLib/bin/
 RLHookLib/build/
+RLHookLib/pyrlhook.egg-info/
+super_hexagon_net
