@@ -529,7 +529,7 @@
 <p>The architecture uses memory manipulation to extract the game state directly from RAM, train an agent with Proximal Policy Optimization (PPO), and enable it to execute its own inputs in the game. This approach is based on the original memory manipulation from <a href="https://github.com/polarbart/SuperHexagonAI">SuperHexagonAI</a>. <strong>TrainerPPO</strong> handles training using <strong>SuperHexagonGymEnv</strong>, which processes the game state and defines possible actions. <strong>SuperHexagonInterface</strong> acts as a bridge to the game, leveraging <strong>RLHook</strong> to read from and write to <strong>SuperHexagonExe</strong>’s memory, allowing the agent to control the game autonomously.</p>
 <h2 id="diagram">Diagram<a class="headerlink" href="#diagram" title="Permanent link">&para;</a></h2>
 <div align="center">
-  <img src="images/architecture.svg" width="100%">
+  <img src="../images/architecture.svg" width="100%">
 </div>
 
 
