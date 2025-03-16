@@ -60,34 +60,57 @@ class SuperHexagonGymEnv(gym.Env):
         min_distances[min_distances == np.inf] = 5000.0
         return min_distances
 
+    def _get_norm_wall_distances(self):
+        """
+        Compute minimal distance to wall for each slot in normalized space [0-1]
+        """
+        wall_distances = self._get_wall_distances()
+        wall_distances = wall_distances / wall_distances.sum()
+        return wall_distances
+
+    def _get_norm_player_angle(self):
+        """
+        Calculates the angle of the player as a continuous variable, by converting it into a sinus function and scaling/offsetting it.
+        This was done to combat the sudden jump from 360° to 0°. We observed that the agent was "confused" by this sudden change.
+
+        Returns:
+            (float): Normalized player angle in space [0-1]
+        """
+        return 0.5 + 0.5 * math.sin(math.radians(self.env.get_triangle_angle()))
+
     def _get_state(self):
         """
-        Build state vector: [normalized wall distances, player angle, direction].
+        Gathers all observations in a numpy array
+
+        Example output: `[0.80090751, 0.5, 0.0967198, 0.3832005, 0.02007971, 0.3832005, 0.0967198, 0.02007971]`
+
+        Returns:
+            (ndarray[float]): A one-dimensional numpy array representing all observations
         """
-        wall_info = self._get_wall_distances()
-        wall_info = wall_info / wall_info.sum()
-        player_angle = np.array(
-            [0.5 + 0.5 * math.sin(math.radians(self.env.get_triangle_angle()))]
-        )
-        direction = np.array([self.get_exit_direction()], dtype=np.float32)
-        state = np.concatenate([wall_info, player_angle, direction])
-        return state
+        return np.concatenate([
+            np.array([self._get_norm_player_angle()]),
+            np.array([self._get_direction_indicator()]),
+            self._get_norm_wall_distances()
+        ])
 
     def _get_reward(self, done, action):
         """
-        Return reward; -10 if done, else adjust by angular distance.
+        Calculations the reward that the agent gets for the current state and the action it took.
+
+        Args:
+            done (bool): If True, gives out max penalty because the agent hit a wall; otherwise normal calculated reward.
+            action (int): Action that the agent took for this step. Used for some reward dependencies.
+
+        Returns:
+            (float): A positive reward value or a negative penalty value
         """
         debug = self.env.debug_mode
         if done:
             if debug:
                 print("Game over! Return -10.0")
             return -10.0
-        wall_info = self._get_wall_distances()
-        wall_info = wall_info / wall_info.sum()
-        player_slot_idx = self.env.get_triangle_slot()
-        player_slot_onehot = np.zeros(self.n_slots, dtype=np.float32)
-        player_slot_onehot[player_slot_idx] = 1.0
         reward = 1
+
         distance = self.get_exit_distance()
         distance_factor = distance / 360
         if distance_factor == 0:
@@ -98,7 +121,6 @@ class SuperHexagonGymEnv(gym.Env):
             print("-------------------------------------------------------")
             print(f"Player Angle: {self.env.get_triangle_angle()}")
             print(f"Player Slot: {self.env.get_triangle_slot()}")
-            print(f"Player One-Hot: {player_slot_onehot}")
             print(f"Distance: {distance} and Factor {distance_factor}")
             print(f"Action Taken: {action}")
             print(f"State: {self._get_state()}")
@@ -137,9 +159,12 @@ class SuperHexagonGymEnv(gym.Env):
         )
         return min(left_distance, right_distance)
 
-    def get_exit_direction(self):
+    def _get_direction_indicator(self):
         """
-        Return direction indicator (0.0 for left, 1.0 for right) to the next wall gap.
+        Calculates the closet direction to a free slot and encodes it into three buckets
+
+        Returns:
+            (float): direction indicator to closet free slot; 0.0: left, 1.0: right, 0.5: already in safe slot
         """
         num_slots = self.env.get_num_slots()
         wall_info = self._get_wall_distances()
@@ -197,22 +222,22 @@ class ActorCritic(nn.Module):
 
 class PPOAgent:
     def __init__(
-        self,
-        env,
-        net_arch=[512, 512, 256],
-        learning_rate=2e-4,
-        gamma=0.999,
-        gae_lambda=0.95,
-        clip_ratio=0.2,
-        ent_coef=0.01,
-        vf_coef=0.6,
-        max_grad_norm=0.5,
-        n_steps=4096,
-        batch_size=32,
-        total_timesteps=1_000_000,
-        initial_ent_coef=0.1,
-        final_ent_coef=0.005,
-        update_epochs=4,
+            self,
+            env,
+            net_arch=[512, 512, 256],
+            learning_rate=2e-4,
+            gamma=0.999,
+            gae_lambda=0.95,
+            clip_ratio=0.2,
+            ent_coef=0.01,
+            vf_coef=0.6,
+            max_grad_norm=0.5,
+            n_steps=4096,
+            batch_size=32,
+            total_timesteps=1_000_000,
+            initial_ent_coef=0.1,
+            final_ent_coef=0.005,
+            update_epochs=4,
     ):
         """Initialize PPOAgent."""
         self.env = env
@@ -255,7 +280,7 @@ class PPOAgent:
                 next_value = values[t + 1]
             delta = rewards[t] + self.gamma * next_value * next_non_terminal - values[t]
             lastgaelam = (
-                delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
+                    delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
             )
             advantages[t] = lastgaelam
         returns = advantages + values
@@ -265,7 +290,7 @@ class PPOAgent:
         """Update entropy coefficient."""
         progress = 1.0 - (current_step / self.total_timesteps)
         self.ent_coef = self.final_ent_coef + progress * (
-            self.initial_ent_coef - self.final_ent_coef
+                self.initial_ent_coef - self.final_ent_coef
         )
 
     def learn(self):
@@ -355,16 +380,16 @@ class PPOAgent:
                     ratio = torch.exp(new_logprobs - mb_old_logprobs)
                     surr1 = ratio * mb_advantages
                     surr2 = (
-                        torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio)
-                        * mb_advantages
+                            torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio)
+                            * mb_advantages
                     )
                     policy_loss = -torch.min(surr1, surr2).mean()
                     value_loss = ((mb_returns - values_pred.squeeze()) ** 2).mean()
 
                     loss = (
-                        policy_loss
-                        + self.vf_coef * value_loss
-                        - self.ent_coef * entropy
+                            policy_loss
+                            + self.vf_coef * value_loss
+                            - self.ent_coef * entropy
                     )
 
                     self.optimizer.zero_grad()

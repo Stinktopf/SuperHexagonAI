@@ -47,14 +47,10 @@ plugins:
   - search:
       lang: en
   - mkdocstrings:
-      handlers:
-        python:
-          options:
-            show_root_heading: true
-            show_source: true
-            show_if_no_docstring: true
 
 markdown_extensions:
+  - pymdownx.arithmatex:
+      inline_syntax: ["$", "$"]
   - toc:
       permalink: true
   - pymdownx.superfences
@@ -72,7 +68,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 extra_javascript:
-  - https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.0.0/mermaid.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 
 extra:
   social:

@@ -116,9 +116,25 @@ class SuperHexagonInterface:
         self.game.step(False)
 
     def _left(self, down):
+        """
+        _left(self, down)
+
+        Simulates pressing the 'Left' key in the game.
+
+        Args:
+            down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
+        """
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x428BD], 1 if down else 0)
 
     def _right(self, down):
+        """
+        _right(self, down)
+
+        Simulates pressing the 'Right' key in the game.
+
+        Args:
+            down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
+        """
         self.game.write_byte('superhexagon.exe', [0x00294B00, 0x428C0], 1 if down else 0)
 
     def _space(self, down):
@@ -135,18 +151,50 @@ class SuperHexagonInterface:
         return (-t) % 6
 
     def get_triangle_angle(self):
+        """
+        get_triangle_angle()
+
+        Retrieves the player's rotation angle in degrees.
+
+        Returns:
+            (int): The rotation angle of the player (0-360 degrees).
+        """
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2958])
 
     def get_world_angle(self):
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1AC])
 
     def get_num_slots(self):
+        """
+        get_num_slots()
+
+        Retrieves the total number of slots in the game.
+
+        Returns:
+            (int): The number of available slots.
+        """
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1BC])
 
     def get_num_walls(self):
+        """
+        get_num_walls()
+
+        Retrieves the total number of walls currently present in the game.
+
+        Returns:
+            (int): The number of walls.
+        """
         return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2930])
 
     def get_triangle_slot(self):
+        """
+        get_triangle_slot()
+
+        Determines the player's current slot based on their rotation angle.
+
+        Returns:
+            (int): The slot index the player is currently occupying.
+        """
         return floor(self.get_triangle_angle() / 360.0 * self.get_num_slots())
 
     def get_n_survived_frames(self):
@@ -156,6 +204,14 @@ class SuperHexagonInterface:
         self.game.write_dword('superhexagon.exe', [0x00294B00, 0x1AC], 1)
 
     def get_walls(self):
+        """
+        get_walls()
+
+        Retrieves information about all active walls in the game.
+
+        Returns:
+            (list[Wall]): A list of Wall objects, each representing a wall's properties.
+        """
         num_walls = self.get_num_walls()
         walls = []
 

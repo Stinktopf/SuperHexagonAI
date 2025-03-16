@@ -11,3 +11,8 @@ rich==13.9.4
 setuptools==70.0.0
 stable_baselines3==2.5.0
 torch==2.7.0.dev20250228+cu128
+mkdocs
+mkdocs-material
+mkdocstrings
+mkdocstrings-python
+pymdown-extensions

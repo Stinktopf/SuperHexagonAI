@@ -1,11 +1,95 @@
-## Heading 1
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque mollis dolor at posuere ultrices. Aliquam facilisis vulputate fermentum. Mauris tincidunt nunc et volutpat rutrum. Phasellus quis dui id ante consequat aliquam sed a ligula. Cras scelerisque posuere commodo. Curabitur eu venenatis augue. Nullam ornare molestie nunc, nec condimentum massa rhoncus ornare. Integer est est, molestie a egestas et, posuere rutrum nulla. In efficitur consectetur orci, sit amet tincidunt risus ornare ac. Praesent eget venenatis massa. Etiam eget orci a dolor efficitur efficitur. Sed sed ultrices est. In eleifend condimentum tellus at eleifend.
+## SuperHexagon Executable Interface
+To interface with the game's memory, we utilized the implementation of [SuperHexagonAI](https://github.com/polarbart/SuperHexagonAI). 
+This project provides a Python wrapper for the C++ memory hook developed in [super-hexagon-ai](https://github.com/adrianchifor/super-hexagon-ai). 
+By leveraging this wrapper, we gained access to the game's memory, enabling several key features, such as:
 
-Nunc sem sem, mattis vitae cursus a, aliquam quis justo. Fusce eget facilisis nibh, vel pulvinar justo. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ornare rhoncus hendrerit. Morbi at augue magna. Nulla et ligula nec tortor laoreet elementum. In ut vulputate neque. Donec ac maximus purus.
+- Speeding up the game
+- Freezing the application
+- Stepping one frame at a time
+- Restarting a game
+- Selecting a level
 
-Vivamus congue malesuada eros vel pellentesque. Curabitur ultrices placerat suscipit. Quisque libero lectus, venenatis ac massa at, maximus suscipit augue. Mauris libero est, suscipit eget risus vel, ultrices vulputate mauris. Morbi bibendum aliquet velit, id dapibus metus ullamcorper et. Curabitur pellentesque at turpis id finibus. Vestibulum velit lorem, commodo ac pretium id, condimentum mollis neque. Duis vulputate orci nec urna luctus, id sodales felis suscipit. In hendrerit sem ipsum, in suscipit sem facilisis in. Nulla convallis ullamcorper nibh. Nulla condimentum varius lacus eu dignissim. Praesent rutrum sem quis est ultricies lobortis. Quisque feugiat egestas vehicula. Etiam fermentum, justo in efficitur dictum, ligula erat mollis sem, sit amet ornare dolor dolor vel sem. Cras elit mauris, lacinia in purus a, ornare iaculis dolor. In sollicitudin, ante in malesuada finibus, arcu lacus bibendum ipsum, sit amet pellentesque eros velit eu orci.
+These functionalities were essential for efficiently managing the training process. By controlling the game at a granular level, we minimized wasted time and resources while maintaining full control over the executable.
 
-## Heading 2
-Ut lacinia tincidunt eros a porta. Morbi sit amet diam in neque porta vulputate quis in orci. Maecenas scelerisque nunc laoreet ex imperdiet, ut fringilla augue eleifend. Nulla elementum ultrices elit. Donec hendrerit quis neque eu facilisis. Phasellus nulla est, elementum sit amet vehicula quis, congue eget sem. Curabitur nec nunc ipsum. Nullam sed pretium est, id vehicula nibh. Integer justo felis, tempor quis malesuada eget, malesuada ut sem. Pellentesque porta, orci non mattis placerat, tellus libero pulvinar diam, sed volutpat neque sapien non dolor. Vestibulum tellus magna, cursus eget malesuada nec, imperdiet nec purus. Etiam est mi, vehicula sit amet mi ac, venenatis luctus orci. Donec faucibus justo ac magna tincidunt viverra. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed efficitur purus eget egestas tempus. Nullam molestie ornare eros, a dignissim augue.
+Beyond application management, we also accessed critical in-game variables. The most relevant methods initially available to us included:
 
-Pellentesque iaculis tellus vitae commodo elementum. Nullam elementum iaculis semper. Maecenas vitae est vitae diam bibendum malesuada non ut lacus. Nam consequat quis nibh eu lacinia. Phasellus mattis nunc eu felis gravida, vitae gravida massa ultrices. Quisque posuere justo et purus euismod, vitae tincidunt neque posuere. Curabitur iaculis congue lacus ac tempus.
+- ::: superhexagon.SuperHexagonInterface._left
+- ::: superhexagon.SuperHexagonInterface._right
+- ::: superhexagon.SuperHexagonInterface.get_triangle_angle
+
+While these methods provided a solid foundation, we encountered limitations that required deeper insights into the game's state. 
+To address this, we extended the Python wrapper by identifying additional memory locations from the C++ implementation, adding the following methods:
+
+- ::: superhexagon.SuperHexagonInterface.get_num_slots
+- ::: superhexagon.SuperHexagonInterface.get_num_walls
+- ::: superhexagon.SuperHexagonInterface.get_triangle_slot
+- ::: superhexagon.SuperHexagonInterface.get_walls
+
+These enhancements allowed us to collect all necessary data for generating observations and implementing a robust reward calculation system.
+
+## Action Space
+The game's input system is relatively simple despite its challenging nature. The action space consists of a one-dimensional array with three possible actions:
+
+0. **Stay**: Remain still. No action will be executed in the game.
+1. **Left**: Rotate counterclockwise. Will call `_left(True)` at the start of the frame and `_left(False)` at the end of the frame.
+2. **Right**: Rotate clockwise. Will call `_right(True)` at the start of the frame and `_right(False)` at the end of the frame.
+
+This defines the complete set of actions required to play the game. 
+Notably, we introduced the "Stay" action, which refrains from pressing any input. 
+While this is not an action a player could typically take, it represents the absence of movement, which can be strategically beneficial in certain situations.
+
+## Observation Space
+The observation space consists of several variables that provide insights into the current state of the game. It is limited to three main variables that utilize a total of 8 values:
+
+- **[0]: Normalized player angle:**
+<div align="left">
+  <img src="../images/player_angle.svg" width="70%">
+</div>
+::: trainer_PPO_GYM.SuperHexagonGymEnv._get_norm_player_angle
+
+- **[1]: Direction indicator to next free slot:**
+  The image below shows an example scenario. The method retrieves all walls and finds the edges of the closest free slot in both directions. After calculating the delta angle of both edges in relation to the player, it returns the direction with the minimal value (For discrete value buckets, see the method definition below).  
+  In this example, the resulting value would be 1.0 (Right).
+<div align="left">
+  <img src="../images/direction_indicator.drawio.svg" width="70%">
+</div>
+::: trainer_PPO_GYM.SuperHexagonGymEnv._get_direction_indicator
+
+- **[2-7]: Normalized wall distances per slot:**
+  ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_norm_wall_distances
+
+These values are calculated at each step in the `_get_state()` method and are used as inputs for the model:
+
+- ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_state
+
+## Reward Calculation
+The reward system was refined multiple times throughout the agent's development. It combines both rewards (positive values) and penalties (negative values) to provide more direct feedback. We distinguish between two cases:
+
+- **Agent is in a free slot**
+    - `1.0`: If the "Stay" action is selected.
+    - `0.7`: If any action other than "Stay" is selected.
+    - This will always result in a positive reward, with the value depending on the action chosen. This approach was adopted to account for the player "jittering" within a free slot, even though it may remain in a safe position. Such jittering sometimes led to a gameover when the agent hit the wall due to slight movement near the slot edges.
+
+- **Agent is in an occupied slot**
+    - `[(-1)-0]`: A continuous negative value, which depends on the distance to the closest free slot. As the agent moves further away from a free slot, the value decreases (becoming closer to -1). Conversely, the value increases as the agent approaches a free slot, reaching 0 and eventually transitioning to a reward.
+    - This was implemented to give the agent a stronger incentive to reach a free slot as quickly as possible, avoiding wasting time in an occupied slot.
+
+> "Free slot" is defined as a slot where, if the player remains in it, they will transition to the next wave of walls without resulting in a gameover.
+
+- ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_reward
+
+## Debugging Controls
+Due to the sped-up nature of the game, debugging became quite challenging.
+To address this, we implemented key combinations that allow us to interact with the game while it is running.
+Using the `keyboard` library, we listened for key presses and created the following features:
+
+- Freezing the entire process:
+    - `Ctrl + Space`
+- Slowing down time:
+    - `Ctrl + Alt`
+- Toggling Debug logs:
+    - `Ctrl + D`
+
+These controls enabled us to inspect specific scenarios in greater detail, gaining deeper insights into the agent's behavior and its internal values. 
+With these debugging tools, we were able to identify the previously discussed player rotation anomaly and also detect some challenging layouts for the agent.
+## Training
