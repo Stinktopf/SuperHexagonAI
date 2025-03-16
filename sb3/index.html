@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../architecture/">
+        <link rel="prev" href="../environment/">
       
       
-        <link rel="next" href="../performance/">
+        <link rel="next" href="../no_sb3/">
       
       
       <link rel="icon" href="../assets/icon.svg">
@@ -20,7 +20,7 @@
     
     
       
-        <title>Implementation - SuperHexagon PPO</title>
+        <title>Training with Stable-Baselines3 - SuperHexagon PPO</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#heading-1" class="md-skip">
+        <a href="#setup" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Implementation
+              Training with Stable-Baselines3
             
           </span>
         </div>
@@ -268,16 +268,19 @@
     
   
   
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../interface/" class="md-tabs__link">
+          
   
     
   
   Implementation
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -415,6 +418,106 @@
   
   
   
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Implementation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Implementation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interface/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Superhexagon Interface
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Environment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
@@ -425,7 +528,7 @@
           
   
   <span class="md-ellipsis">
-    Implementation
+    Training with Stable-Baselines3
     
   </span>
   
@@ -437,7 +540,7 @@
         
   
   <span class="md-ellipsis">
-    Implementation
+    Training with Stable-Baselines3
     
   </span>
   
@@ -458,18 +561,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#heading-1" class="md-nav__link">
+  <a href="#setup" class="md-nav__link">
     <span class="md-ellipsis">
-      Heading 1
+      Setup
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#heading-2" class="md-nav__link">
+  <a href="#settings" class="md-nav__link">
     <span class="md-ellipsis">
-      Heading 2
+      Settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entropy-scheduling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entropy Scheduling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trainer_PPO_GYM_SB3.EntropyCoefficientScheduler.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trainer_PPO_GYM_SB3.EntropyCoefficientScheduler._on_step" class="md-nav__link">
+    <span class="md-ellipsis">
+      _on_step
     </span>
   </a>
   
@@ -478,6 +608,36 @@
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../no_sb3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Training witout Stable-Baselines3
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -523,15 +683,122 @@
   
 
 
-  <h1>Implementation</h1>
+  <h1>Training with Stable-Baselines3</h1>
 
-<h2 id="heading-1">Heading 1<a class="headerlink" href="#heading-1" title="Permanent link">&para;</a></h2>
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque mollis dolor at posuere ultrices. Aliquam facilisis vulputate fermentum. Mauris tincidunt nunc et volutpat rutrum. Phasellus quis dui id ante consequat aliquam sed a ligula. Cras scelerisque posuere commodo. Curabitur eu venenatis augue. Nullam ornare molestie nunc, nec condimentum massa rhoncus ornare. Integer est est, molestie a egestas et, posuere rutrum nulla. In efficitur consectetur orci, sit amet tincidunt risus ornare ac. Praesent eget venenatis massa. Etiam eget orci a dolor efficitur efficitur. Sed sed ultrices est. In eleifend condimentum tellus at eleifend.</p>
-<p>Nunc sem sem, mattis vitae cursus a, aliquam quis justo. Fusce eget facilisis nibh, vel pulvinar justo. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ornare rhoncus hendrerit. Morbi at augue magna. Nulla et ligula nec tortor laoreet elementum. In ut vulputate neque. Donec ac maximus purus.</p>
-<p>Vivamus congue malesuada eros vel pellentesque. Curabitur ultrices placerat suscipit. Quisque libero lectus, venenatis ac massa at, maximus suscipit augue. Mauris libero est, suscipit eget risus vel, ultrices vulputate mauris. Morbi bibendum aliquet velit, id dapibus metus ullamcorper et. Curabitur pellentesque at turpis id finibus. Vestibulum velit lorem, commodo ac pretium id, condimentum mollis neque. Duis vulputate orci nec urna luctus, id sodales felis suscipit. In hendrerit sem ipsum, in suscipit sem facilisis in. Nulla convallis ullamcorper nibh. Nulla condimentum varius lacus eu dignissim. Praesent rutrum sem quis est ultricies lobortis. Quisque feugiat egestas vehicula. Etiam fermentum, justo in efficitur dictum, ligula erat mollis sem, sit amet ornare dolor dolor vel sem. Cras elit mauris, lacinia in purus a, ornare iaculis dolor. In sollicitudin, ante in malesuada finibus, arcu lacus bibendum ipsum, sit amet pellentesque eros velit eu orci.</p>
-<h2 id="heading-2">Heading 2<a class="headerlink" href="#heading-2" title="Permanent link">&para;</a></h2>
-<p>Ut lacinia tincidunt eros a porta. Morbi sit amet diam in neque porta vulputate quis in orci. Maecenas scelerisque nunc laoreet ex imperdiet, ut fringilla augue eleifend. Nulla elementum ultrices elit. Donec hendrerit quis neque eu facilisis. Phasellus nulla est, elementum sit amet vehicula quis, congue eget sem. Curabitur nec nunc ipsum. Nullam sed pretium est, id vehicula nibh. Integer justo felis, tempor quis malesuada eget, malesuada ut sem. Pellentesque porta, orci non mattis placerat, tellus libero pulvinar diam, sed volutpat neque sapien non dolor. Vestibulum tellus magna, cursus eget malesuada nec, imperdiet nec purus. Etiam est mi, vehicula sit amet mi ac, venenatis luctus orci. Donec faucibus justo ac magna tincidunt viverra. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed efficitur purus eget egestas tempus. Nullam molestie ornare eros, a dignissim augue.</p>
-<p>Pellentesque iaculis tellus vitae commodo elementum. Nullam elementum iaculis semper. Maecenas vitae est vitae diam bibendum malesuada non ut lacus. Nam consequat quis nibh eu lacinia. Phasellus mattis nunc eu felis gravida, vitae gravida massa ultrices. Quisque posuere justo et purus euismod, vitae tincidunt neque posuere. Curabitur iaculis congue lacus ac tempus.</p>
+<p>The following section presents the implementation using Stable-Baselines3.</p>
+<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<p><a href="https://stable-baselines3.readthedocs.io/en/master/">Stable-Baselines3</a> provides a direct implementation of the PPO algorithm, which we use for training our RL agent. By leveraging this framework, we can seamlessly integrate our Gymnasium environment and train the agent.</p>
+<p>The usage is as follows:
+<div class="highlight"><pre><span></span><code><span class="n">env</span> <span class="o">=</span> <span class="n">SuperHexagonGymEnv</span><span class="p">()</span>
+<span class="n">total_timesteps</span> <span class="o">=</span> <span class="mi">1_000_000</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">PPO</span><span class="p">(</span>
+    <span class="n">policy</span><span class="o">=</span><span class="s2">&quot;MlpPolicy&quot;</span><span class="p">,</span>
+    <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span>
+    <span class="n">n_steps</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">2e-4</span><span class="p">,</span>
+    <span class="n">gamma</span><span class="o">=</span><span class="mf">0.999</span><span class="p">,</span>
+    <span class="n">gae_lambda</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+    <span class="n">ent_coef</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">vf_coef</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">max_grad_norm</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">policy_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">net_arch</span><span class="o">=</span><span class="p">[</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">256</span><span class="p">]),</span>
+<span class="p">)</span>
+<span class="n">ent_coef_scheduler</span> <span class="o">=</span> <span class="n">EntropyCoefficientScheduler</span><span class="p">(</span>
+    <span class="n">total_timesteps</span><span class="o">=</span><span class="n">total_timesteps</span><span class="p">,</span> <span class="n">initial_ent_coef</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">final_ent_coef</span><span class="o">=</span><span class="mf">0.005</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="n">total_timesteps</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">ent_coef_scheduler</span><span class="p">)</span>
+</code></pre></div></p>
+<h3 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">&para;</a></h3>
+<p>The PPO agent is configured with:</p>
+<ul>
+<li><strong>Policy:</strong> A multi-layer perceptron is used.</li>
+<li><strong>Learning Rate:</strong> <code>2e-4</code> - Stabilizes learning.</li>
+<li><strong>Gamma:</strong> <code>0.999</code> - Prioritizes long-term survival over short-term gains.</li>
+<li><strong>Entropy Coefficient:</strong> <code>0.01 → 0.005</code> - Encourages early exploration, then stabilizes decision-making.</li>
+<li><strong>Policy Network Architecture:</strong> <code>[512, 512, 256]</code> - Optimised by trial and error.</li>
+</ul>
+<h2 id="entropy-scheduling">Entropy Scheduling<a class="headerlink" href="#entropy-scheduling" title="Permanent link">&para;</a></h2>
+<p>To ensure a balance between exploration and exploitation, we linearly scale the entropy coefficient during training. </p>
+<p>This is achieved using the <code>EntropyCoefficientScheduler</code> callback:</p>
+<ul>
+<li>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="trainer_PPO_GYM_SB3.EntropyCoefficientScheduler.__init__"></a>
+    <div class="doc doc-contents first">
+
+        <p><strong>__init__</strong></p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>trainer_PPO_GYM_SB3.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total_timesteps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">initial_ent_coef</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">final_ent_coef</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **\_\_init\_\_**</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">total_timesteps</span> <span class="o">=</span> <span class="n">total_timesteps</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">initial_ent_coef</span> <span class="o">=</span> <span class="n">initial_ent_coef</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">final_ent_coef</span> <span class="o">=</span> <span class="n">final_ent_coef</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div></li>
+<li>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="trainer_PPO_GYM_SB3.EntropyCoefficientScheduler._on_step"></a>
+    <div class="doc doc-contents first">
+
+        <p><strong>_on_step</strong></p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>trainer_PPO_GYM_SB3.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_on_step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **_on_step**</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">progress</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_timesteps</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_timesteps</span><span class="p">)</span>
+    <span class="n">new_ent_coef</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_ent_coef</span> <span class="o">+</span> <span class="n">progress</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_ent_coef</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_ent_coef</span>
+    <span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ent_coef</span> <span class="o">=</span> <span class="n">new_ent_coef</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div></li>
+</ul>
 
 
 
@@ -595,7 +862,7 @@
     
       <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
       
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.0.0/mermaid.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
     
   </body>
