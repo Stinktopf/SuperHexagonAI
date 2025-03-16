@@ -177,12 +177,12 @@ class SuperHexagonGymEnv(gym.Env):
 
 class EntropyCoefficientScheduler(BaseCallback):
     """
-    Callback to linearly schedule the entropy coefficient.
+    Callback to linearly schedule the entropy coefficient during training.
     """
 
-    def __init__(self, total_timesteps, initial_ent_coef, final_ent_coef, verbose=0):
+    def __init__(self, total_timesteps: int, initial_ent_coef: float, final_ent_coef: float, verbose: int = 0):
         """
-        Initialize scheduler with total timesteps and ent_coef range.
+        **\_\_init\_\_**
         """
         super().__init__(verbose)
         self.total_timesteps = total_timesteps
@@ -191,7 +191,7 @@ class EntropyCoefficientScheduler(BaseCallback):
 
     def _on_step(self) -> bool:
         """
-        Update model.ent_coef based on training progress.
+        **_on_step**
         """
         progress = 1.0 - (self.num_timesteps / self.total_timesteps)
         new_ent_coef = self.final_ent_coef + progress * (
@@ -203,7 +203,7 @@ class EntropyCoefficientScheduler(BaseCallback):
 
 if __name__ == "__main__":
     """
-    Train PPO on SuperHexagonGymEnv using EntropyCoefficientScheduler.
+    Trains a PPO agent on the SuperHexagonGymEnv using an entropy coefficient scheduler.
     """
     env = SuperHexagonGymEnv()
     total_timesteps = 1_000_000

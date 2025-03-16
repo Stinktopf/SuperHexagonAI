@@ -87,11 +87,13 @@ class SuperHexagonGymEnv(gym.Env):
         Returns:
             (ndarray[float]): A one-dimensional numpy array representing all observations
         """
-        return np.concatenate([
-            np.array([self._get_norm_player_angle()]),
-            np.array([self._get_direction_indicator()]),
-            self._get_norm_wall_distances()
-        ])
+        return np.concatenate(
+            [
+                np.array([self._get_norm_player_angle()]),
+                np.array([self._get_direction_indicator()]),
+                self._get_norm_wall_distances(),
+            ]
+        )
 
     def _get_reward(self, done, action):
         """
@@ -200,7 +202,8 @@ class SuperHexagonGymEnv(gym.Env):
 
 class ActorCritic(nn.Module):
     def __init__(self, input_dim, num_actions, net_arch):
-        """Initialize ActorCritic network."""
+        """
+        **\_\_init\_\_(self, input_dim, num_actions, net_arch)**"""
         super(ActorCritic, self).__init__()
         layers = []
         last_dim = input_dim
@@ -213,7 +216,7 @@ class ActorCritic(nn.Module):
         self.value_head = nn.Linear(last_dim, 1)
 
     def forward(self, x):
-        """Forward pass."""
+        """**forward(self, x)**"""
         x = self.shared(x)
         logits = self.policy_head(x)
         value = self.value_head(x)
@@ -222,22 +225,22 @@ class ActorCritic(nn.Module):
 
 class PPOAgent:
     def __init__(
-            self,
-            env,
-            net_arch=[512, 512, 256],
-            learning_rate=2e-4,
-            gamma=0.999,
-            gae_lambda=0.95,
-            clip_ratio=0.2,
-            ent_coef=0.01,
-            vf_coef=0.6,
-            max_grad_norm=0.5,
-            n_steps=4096,
-            batch_size=32,
-            total_timesteps=1_000_000,
-            initial_ent_coef=0.1,
-            final_ent_coef=0.005,
-            update_epochs=4,
+        self,
+        env,
+        net_arch=[512, 512, 256],
+        learning_rate=2e-4,
+        gamma=0.999,
+        gae_lambda=0.95,
+        clip_ratio=0.2,
+        ent_coef=0.01,
+        vf_coef=0.6,
+        max_grad_norm=0.5,
+        n_steps=4096,
+        batch_size=32,
+        total_timesteps=1_000_000,
+        initial_ent_coef=0.1,
+        final_ent_coef=0.005,
+        update_epochs=4,
     ):
         """Initialize PPOAgent."""
         self.env = env
@@ -268,7 +271,6 @@ class PPOAgent:
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
 
     def compute_gae(self, rewards, values, dones, last_value):
-        """Compute GAE."""
         advantages = np.zeros_like(rewards)
         lastgaelam = 0
         for t in reversed(range(len(rewards))):
@@ -280,17 +282,16 @@ class PPOAgent:
                 next_value = values[t + 1]
             delta = rewards[t] + self.gamma * next_value * next_non_terminal - values[t]
             lastgaelam = (
-                    delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
+                delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
             )
             advantages[t] = lastgaelam
         returns = advantages + values
         return advantages, returns
 
     def update_ent_coef(self, current_step):
-        """Update entropy coefficient."""
         progress = 1.0 - (current_step / self.total_timesteps)
         self.ent_coef = self.final_ent_coef + progress * (
-                self.initial_ent_coef - self.final_ent_coef
+            self.initial_ent_coef - self.final_ent_coef
         )
 
     def learn(self):
@@ -380,16 +381,16 @@ class PPOAgent:
                     ratio = torch.exp(new_logprobs - mb_old_logprobs)
                     surr1 = ratio * mb_advantages
                     surr2 = (
-                            torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio)
-                            * mb_advantages
+                        torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio)
+                        * mb_advantages
                     )
                     policy_loss = -torch.min(surr1, surr2).mean()
                     value_loss = ((mb_returns - values_pred.squeeze()) ** 2).mean()
 
                     loss = (
-                            policy_loss
-                            + self.vf_coef * value_loss
-                            - self.ent_coef * entropy
+                        policy_loss
+                        + self.vf_coef * value_loss
+                        - self.ent_coef * entropy
                     )
 
                     self.optimizer.zero_grad()

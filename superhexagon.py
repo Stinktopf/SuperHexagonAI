@@ -117,9 +117,9 @@ class SuperHexagonInterface:
 
     def _left(self, down):
         """
-        _left(self, down)
+        **_left()**
 
-        Simulates pressing the 'Left' key in the game.
+        Simulates pressing the **Left** key in the game.
 
         Args:
             down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
@@ -128,9 +128,9 @@ class SuperHexagonInterface:
 
     def _right(self, down):
         """
-        _right(self, down)
+        **_right()**
 
-        Simulates pressing the 'Right' key in the game.
+        Simulates pressing the **Right** key in the game.
 
         Args:
             down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
@@ -152,7 +152,7 @@ class SuperHexagonInterface:
 
     def get_triangle_angle(self):
         """
-        get_triangle_angle()
+        **get_triangle_angle()**
 
         Retrieves the player's rotation angle in degrees.
 
@@ -166,7 +166,7 @@ class SuperHexagonInterface:
 
     def get_num_slots(self):
         """
-        get_num_slots()
+        **get_num_slots()**
 
         Retrieves the total number of slots in the game.
 
@@ -177,7 +177,7 @@ class SuperHexagonInterface:
 
     def get_num_walls(self):
         """
-        get_num_walls()
+        **get_num_walls()**
 
         Retrieves the total number of walls currently present in the game.
 
@@ -188,7 +188,7 @@ class SuperHexagonInterface:
 
     def get_triangle_slot(self):
         """
-        get_triangle_slot()
+        **get_triangle_slot()**
 
         Determines the player's current slot based on their rotation angle.
 
@@ -205,7 +205,7 @@ class SuperHexagonInterface:
 
     def get_walls(self):
         """
-        get_walls()
+        **get_walls()**
 
         Retrieves information about all active walls in the game.
 

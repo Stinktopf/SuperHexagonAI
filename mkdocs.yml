@@ -40,7 +40,11 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Architecture: architecture.md
-  - Implementation: implementation.md
+  - Implementation:
+    - Superhexagon Interface: interface.md
+    - Environment: environment.md
+    - Training with Stable-Baselines3: sb3.md
+    - Training witout Stable-Baselines3: no_sb3.md
   - Performance: performance.md
 
 plugins:

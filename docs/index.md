@@ -36,5 +36,5 @@ Follow these links to learn more about the different aspects of our project:
 
 - [Getting Started](./getting-started.md): Instructions for installing and starting the project.
 - [Architecture](./architecture.md): Description of the architecture for implementing Proximal Policy Optimization.
-- [Implementation](./implementation.md): Detailed explanation of the implementation.
+- [Implementation](./interface.md): Detailed explanation of the implementation.
 - [Performance](./performance.md): Analysis of performance and comparison with existing implementations.
