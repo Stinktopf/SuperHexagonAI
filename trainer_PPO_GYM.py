@@ -1,5 +1,6 @@
 from environment import SuperHexagonGymEnv
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,7 +9,7 @@ from torch.distributions import Categorical
 
 class ActorCritic(nn.Module):
     def __init__(self, input_dim, num_actions, net_arch):
-        """**\_\_init\_\_**"""
+        r"""**\_\_init\_\_**"""
         super(ActorCritic, self).__init__()
         layers = []
         last_dim = input_dim
@@ -77,21 +78,33 @@ class PPOAgent:
 
     def compute_gae(self, rewards, values, dones, last_value):
         advantages = np.zeros_like(rewards)
-        lastgaelam = 0
-        for t in reversed(range(len(rewards))):
-            if t == len(rewards) - 1:
-                next_non_terminal = 1.0 - dones[-1]
-                next_value = last_value
-            else:
-                next_non_terminal = 1.0 - dones[t + 1]
-                next_value = values[t + 1]
-            delta = rewards[t] + self.gamma * next_value * next_non_terminal - values[t]
-            lastgaelam = (
-                delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
-            )
-            advantages[t] = lastgaelam
+        T = len(rewards)
+        start = 0
+        while start < T:
+            end = start
+
+            while end < T:
+                end += 1
+                if dones[end - 1] == 1:
+                    break
+
+            seg_last_value = 0.0 if dones[end - 1] == 1 else last_value
+
+            lastgaelam = 0
+            for t in reversed(range(start, end)):
+                if t == end - 1:
+                    next_non_terminal = 0.0 if dones[t] == 1 else 1.0
+                    next_value = seg_last_value
+                else:
+                    next_non_terminal = 1.0 - dones[t + 1]
+                    next_value = values[t + 1]
+                delta = rewards[t] + self.gamma * next_value * next_non_terminal - values[t]
+                lastgaelam = delta + self.gamma * self.gae_lambda * next_non_terminal * lastgaelam
+                advantages[t] = lastgaelam
+            start = end
         returns = advantages + values
         return advantages, returns
+
 
     def update_ent_coef(self, current_step):
         progress = 1.0 - (current_step / self.total_timesteps)
@@ -131,7 +144,7 @@ class PPOAgent:
 
                 obs, reward, done, _, _ = self.env.step(action.item())
                 rewards.append(reward)
-                dones.append(done)
+                dones.append(float(done))
 
                 ep_rewards += reward
                 current_step += 1
@@ -145,7 +158,10 @@ class PPOAgent:
 
             obs_tensor = torch.FloatTensor(obs).to(self.device).unsqueeze(0)
             _, last_value = self.model(obs_tensor)
-            last_value = last_value.item()
+            if dones[-1] == 1.0:
+                last_value = 0.0
+            else:
+                last_value = last_value.item()
 
             observations = np.array(observations, dtype=np.float32)
             actions = np.array(actions)
@@ -185,24 +201,15 @@ class PPOAgent:
 
                     ratio = torch.exp(new_logprobs - mb_old_logprobs)
                     surr1 = ratio * mb_advantages
-                    surr2 = (
-                        torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio)
-                        * mb_advantages
-                    )
+                    surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * mb_advantages
                     policy_loss = -torch.min(surr1, surr2).mean()
                     value_loss = ((mb_returns - values_pred.squeeze()) ** 2).mean()
 
-                    loss = (
-                        policy_loss
-                        + self.vf_coef * value_loss
-                        - self.ent_coef * entropy
-                    )
+                    loss = policy_loss + self.vf_coef * value_loss - self.ent_coef * entropy
 
                     self.optimizer.zero_grad()
                     loss.backward()
-                    nn.utils.clip_grad_norm_(
-                        self.model.parameters(), self.max_grad_norm
-                    )
+                    nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
                     self.optimizer.step()
 
             if current_step % 10000 < self.n_steps:

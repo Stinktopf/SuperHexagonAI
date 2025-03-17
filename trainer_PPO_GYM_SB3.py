@@ -16,18 +16,14 @@ class EntropyCoefficientScheduler(BaseCallback):
         final_ent_coef: float,
         verbose: int = 0,
     ):
-        """
-        **\_\_init\_\_**
-        """
+        r"""**\_\_init\_\_**"""
         super().__init__(verbose)
         self.total_timesteps = total_timesteps
         self.initial_ent_coef = initial_ent_coef
         self.final_ent_coef = final_ent_coef
 
     def _on_step(self) -> bool:
-        """
-        **_on_step**
-        """
+        """**_on_step**"""
         progress = 1.0 - (self.num_timesteps / self.total_timesteps)
         new_ent_coef = self.final_ent_coef + progress * (
             self.initial_ent_coef - self.final_ent_coef

@@ -1,8 +1,11 @@
+from superhexagon import SuperHexagonInterface
+
 import math
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from superhexagon import SuperHexagonInterface
+import matplotlib.pyplot as plt
+import csv
 
 
 class SuperHexagonGymEnv(gym.Env):
@@ -15,7 +18,7 @@ class SuperHexagonGymEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self):
-        """Initialize env and define spaces."""
+        """Initialize env, define spaces and setup live visualization."""
         super().__init__()
         self.env = SuperHexagonInterface(
             frame_skip=1, run_afap=True, allow_game_restart=True
@@ -27,11 +30,30 @@ class SuperHexagonGymEnv(gym.Env):
         )
         self.episode_frames = 0
 
+        self.episode_rewards = []
+
+        self.minibatch_size = 32
+        self.current_minibatch_total_rewards = []
+        self.current_minibatch_episode_lengths = []
+
+        self.all_batch_avg_rewards = []
+        self.all_batch_min_rewards = []
+        self.all_batch_max_rewards = []
+
+        self.all_batch_avg_episode_lengths = []
+        self.all_batch_min_episode_lengths = []
+        self.all_batch_max_episode_lengths = []
+
+        plt.ion()
+        self.fig, (self.ax1, self.ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        plt.show()
+
     def reset(self, seed=None, options=None):
         """Reset env and return initial observation."""
         super().reset(seed=seed)
         self.env.reset()
         self.episode_frames = 0
+        self.episode_rewards = []
         obs = self._get_state()
         return obs, {}
 
@@ -41,6 +63,37 @@ class SuperHexagonGymEnv(gym.Env):
         self.episode_frames += 1
         obs = self._get_state()
         reward = self._get_reward(done, action)
+        self.episode_rewards.append(reward)
+
+        if done:
+            episode_total_reward = sum(self.episode_rewards)
+            episode_length = self.episode_frames
+
+            self.current_minibatch_total_rewards.append(episode_total_reward)
+            self.current_minibatch_episode_lengths.append(episode_length)
+
+            if len(self.current_minibatch_total_rewards) >= self.minibatch_size:
+                batch_avg_reward = np.mean(self.current_minibatch_total_rewards)
+                batch_min_reward = np.min(self.current_minibatch_total_rewards)
+                batch_max_reward = np.max(self.current_minibatch_total_rewards)
+
+                self.all_batch_avg_rewards.append(batch_avg_reward)
+                self.all_batch_min_rewards.append(batch_min_reward)
+                self.all_batch_max_rewards.append(batch_max_reward)
+
+                batch_avg_length = np.mean(self.current_minibatch_episode_lengths)
+                batch_min_length = np.min(self.current_minibatch_episode_lengths)
+                batch_max_length = np.max(self.current_minibatch_episode_lengths)
+
+                self.all_batch_avg_episode_lengths.append(batch_avg_length)
+                self.all_batch_min_episode_lengths.append(batch_min_length)
+                self.all_batch_max_episode_lengths.append(batch_max_length)
+
+                self.update_live_plot()
+
+                self.current_minibatch_total_rewards = []
+                self.current_minibatch_episode_lengths = []
+
         return obs, reward, done, False, {}
 
     def _get_wall_distances(self):
@@ -77,7 +130,7 @@ class SuperHexagonGymEnv(gym.Env):
         """
         Gathers all observations in a numpy array
 
-        Example output: `[0.80090751, 0.5, 0.0967198, 0.3832005, 0.02007971, 0.3832005, 0.0967198, 0.02007971]`
+        Example output: [0.80090751, 0.5, 0.0967198, 0.3832005, 0.02007971, 0.3832005, 0.0967198, 0.02007971]
 
         Returns:
             (ndarray[float]): A one-dimensional numpy array representing all observations
@@ -92,7 +145,7 @@ class SuperHexagonGymEnv(gym.Env):
 
     def _get_reward(self, done, action):
         """
-        Calculations the reward that the agent gets for the current state and the action it took.
+        Calculates the reward that the agent gets for the current state and the action it took.
 
         Args:
             done (bool): If True, gives out max penalty because the agent hit a wall; otherwise normal calculated reward.
@@ -158,10 +211,10 @@ class SuperHexagonGymEnv(gym.Env):
 
     def _get_direction_indicator(self):
         """
-        Calculates the closet direction to a free slot and encodes it into three buckets
+        Calculates the closest direction to a free slot and encodes it into three buckets
 
         Returns:
-            (float): direction indicator to closet free slot; 0.0: left, 1.0: right, 0.5: already in safe slot
+            (float): direction indicator to closest free slot; 0.0: left, 1.0: right, 0.5: already in safe slot
         """
         num_slots = self.env.get_num_slots()
         wall_info = self._get_wall_distances()
@@ -193,3 +246,67 @@ class SuperHexagonGymEnv(gym.Env):
     def render(self, mode="human"):
         """Render method (not implemented)."""
         pass
+
+    def update_live_plot(self):
+        """
+        Updates the live plot with the collected minibatch metrics,
+        saves a single image ("live_plot.png"), and writes the metrics to "metrics.csv".
+        """
+        batches = range(1, len(self.all_batch_avg_rewards) + 1)
+
+        self.ax1.clear()
+        self.ax1.plot(batches, self.all_batch_avg_rewards, label="Avg Reward")
+        self.ax1.plot(batches, self.all_batch_min_rewards, label="Min Reward")
+        self.ax1.plot(batches, self.all_batch_max_rewards, label="Max Reward")
+        self.ax1.set_title("Reward per Minibatch")
+        self.ax1.set_xlabel("Minibatch")
+        self.ax1.set_ylabel("Reward")
+        self.ax1.legend()
+
+        self.ax2.clear()
+        self.ax2.plot(
+            batches, self.all_batch_avg_episode_lengths, label="Avg Episode Length"
+        )
+        self.ax2.plot(
+            batches, self.all_batch_min_episode_lengths, label="Min Episode Length"
+        )
+        self.ax2.plot(
+            batches, self.all_batch_max_episode_lengths, label="Max Episode Length"
+        )
+        self.ax2.set_title("Episode Length per Minibatch")
+        self.ax2.set_xlabel("Minibatch")
+        self.ax2.set_ylabel("Frames")
+        self.ax2.legend()
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+        self.fig.savefig("live_plot.png")
+
+        csv_filename = "metrics.csv"
+        with open(csv_filename, mode="w", newline="") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(
+                [
+                    "Minibatch",
+                    "Avg Reward",
+                    "Min Reward",
+                    "Max Reward",
+                    "Avg Episode Length",
+                    "Min Episode Length",
+                    "Max Episode Length",
+                ]
+            )
+
+            for i in range(len(self.all_batch_avg_rewards)):
+                writer.writerow(
+                    [
+                        i + 1,
+                        self.all_batch_avg_rewards[i],
+                        self.all_batch_min_rewards[i],
+                        self.all_batch_max_rewards[i],
+                        self.all_batch_avg_episode_lengths[i],
+                        self.all_batch_min_episode_lengths[i],
+                        self.all_batch_max_episode_lengths[i],
+                    ]
+                )
