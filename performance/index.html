@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#heading-1" class="md-skip">
+        <a href="#proximal-policy-optimization-with-stable-baselines3" class="md-skip">
           Skip to content
         </a>
       
@@ -607,18 +607,27 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#heading-1" class="md-nav__link">
+  <a href="#proximal-policy-optimization-with-stable-baselines3" class="md-nav__link">
     <span class="md-ellipsis">
-      Heading 1
+      Proximal Policy Optimization with Stable-Baselines3
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#heading-2" class="md-nav__link">
+  <a href="#proximal-policy-optimization-without-stable-baselines3" class="md-nav__link">
     <span class="md-ellipsis">
-      Heading 2
+      Proximal Policy Optimization without Stable-Baselines3
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-q-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deep Q Network
     </span>
   </a>
   
@@ -653,13 +662,131 @@
 
   <h1>Performance</h1>
 
-<h2 id="heading-1">Heading 1<a class="headerlink" href="#heading-1" title="Permanent link">&para;</a></h2>
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque mollis dolor at posuere ultrices. Aliquam facilisis vulputate fermentum. Mauris tincidunt nunc et volutpat rutrum. Phasellus quis dui id ante consequat aliquam sed a ligula. Cras scelerisque posuere commodo. Curabitur eu venenatis augue. Nullam ornare molestie nunc, nec condimentum massa rhoncus ornare. Integer est est, molestie a egestas et, posuere rutrum nulla. In efficitur consectetur orci, sit amet tincidunt risus ornare ac. Praesent eget venenatis massa. Etiam eget orci a dolor efficitur efficitur. Sed sed ultrices est. In eleifend condimentum tellus at eleifend.</p>
-<p>Nunc sem sem, mattis vitae cursus a, aliquam quis justo. Fusce eget facilisis nibh, vel pulvinar justo. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus ornare rhoncus hendrerit. Morbi at augue magna. Nulla et ligula nec tortor laoreet elementum. In ut vulputate neque. Donec ac maximus purus.</p>
-<p>Vivamus congue malesuada eros vel pellentesque. Curabitur ultrices placerat suscipit. Quisque libero lectus, venenatis ac massa at, maximus suscipit augue. Mauris libero est, suscipit eget risus vel, ultrices vulputate mauris. Morbi bibendum aliquet velit, id dapibus metus ullamcorper et. Curabitur pellentesque at turpis id finibus. Vestibulum velit lorem, commodo ac pretium id, condimentum mollis neque. Duis vulputate orci nec urna luctus, id sodales felis suscipit. In hendrerit sem ipsum, in suscipit sem facilisis in. Nulla convallis ullamcorper nibh. Nulla condimentum varius lacus eu dignissim. Praesent rutrum sem quis est ultricies lobortis. Quisque feugiat egestas vehicula. Etiam fermentum, justo in efficitur dictum, ligula erat mollis sem, sit amet ornare dolor dolor vel sem. Cras elit mauris, lacinia in purus a, ornare iaculis dolor. In sollicitudin, ante in malesuada finibus, arcu lacus bibendum ipsum, sit amet pellentesque eros velit eu orci.</p>
-<h2 id="heading-2">Heading 2<a class="headerlink" href="#heading-2" title="Permanent link">&para;</a></h2>
-<p>Ut lacinia tincidunt eros a porta. Morbi sit amet diam in neque porta vulputate quis in orci. Maecenas scelerisque nunc laoreet ex imperdiet, ut fringilla augue eleifend. Nulla elementum ultrices elit. Donec hendrerit quis neque eu facilisis. Phasellus nulla est, elementum sit amet vehicula quis, congue eget sem. Curabitur nec nunc ipsum. Nullam sed pretium est, id vehicula nibh. Integer justo felis, tempor quis malesuada eget, malesuada ut sem. Pellentesque porta, orci non mattis placerat, tellus libero pulvinar diam, sed volutpat neque sapien non dolor. Vestibulum tellus magna, cursus eget malesuada nec, imperdiet nec purus. Etiam est mi, vehicula sit amet mi ac, venenatis luctus orci. Donec faucibus justo ac magna tincidunt viverra. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed efficitur purus eget egestas tempus. Nullam molestie ornare eros, a dignissim augue.</p>
-<p>Pellentesque iaculis tellus vitae commodo elementum. Nullam elementum iaculis semper. Maecenas vitae est vitae diam bibendum malesuada non ut lacus. Nam consequat quis nibh eu lacinia. Phasellus mattis nunc eu felis gravida, vitae gravida massa ultrices. Quisque posuere justo et purus euismod, vitae tincidunt neque posuere. Curabitur iaculis congue lacus ac tempus.</p>
+<p>The performance of our approach is described below.</p>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  .chart-pair {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 2em;
+    flex-wrap: wrap;
+  }
+  .chart-container {
+    flex: 0 0 auto;
+    width: 500px;
+    margin: 0.5em;
+  }
+</style>
+
+<h2 id="proximal-policy-optimization-with-stable-baselines3">Proximal Policy Optimization with Stable-Baselines3<a class="headerlink" href="#proximal-policy-optimization-with-stable-baselines3" title="Permanent link">&para;</a></h2>
+<div class="chart-pair">
+  <div class="chart-container">
+    <canvas id="ppo_sb3_reward" width="500" height="400"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="ppo_sb3_episode" width="500" height="400"></canvas>
+  </div>
+</div>
+
+<h2 id="proximal-policy-optimization-without-stable-baselines3">Proximal Policy Optimization without Stable-Baselines3<a class="headerlink" href="#proximal-policy-optimization-without-stable-baselines3" title="Permanent link">&para;</a></h2>
+<div class="chart-pair">
+  <div class="chart-container">
+    <canvas id="ppo_no_sb3_reward" width="500" height="400"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="ppo_no_sb3_episode" width="500" height="400"></canvas>
+  </div>
+</div>
+
+<h2 id="deep-q-network">Deep Q Network<a class="headerlink" href="#deep-q-network" title="Permanent link">&para;</a></h2>
+<div class="chart-pair">
+  <div class="chart-container">
+    <canvas id="dqn_reward" width="500" height="400"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="dqn_episode" width="500" height="400"></canvas>
+  </div>
+</div>
+
+<script>
+  const labels = [1,2,3,4,5,6,7,8,9,10];
+
+  const ppoSb3Reward   = [57,66,58,62,53,60,58,45,49,70];
+  const ppoSb3Episode  = [144,158,144,146,130,141,133,121,127,146];
+
+  const ppoNoSb3Reward = [50,55,60,65,70,75,80,85,90,95];
+  const ppoNoSb3Episode= [140,145,150,155,160,165,170,175,180,185];
+
+  const dqnReward      = [40,42,44,46,48,50,52,54,56,58];
+  const dqnEpisode     = [130,135,140,145,150,155,160,165,170,175];
+
+  const commonOptions = {
+    plugins: {
+      legend: {
+        labels: { color: '#fff' }
+      },
+      title: {
+        display: true,
+        color: '#fff'
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#fff' },
+        title: { display: true, text: 'Minibatch', color: '#fff' },
+        grid: { color: 'rgba(255, 255, 255, 0.2)' }
+      },
+      y: {
+        ticks: { color: '#fff' },
+        title: { display: true, text: '', color: '#fff' },
+        grid: { color: 'rgba(255, 255, 255, 0.2)' }
+      }
+    }
+  };
+
+  function createChart(ctx, titleText, dataArray, yAxisTitle, borderColor) {
+    const options = JSON.parse(JSON.stringify(commonOptions));
+    options.plugins.title.text = titleText;
+    options.scales.y.title.text = yAxisTitle;
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: titleText,
+          data: dataArray,
+          borderColor: borderColor,
+          backgroundColor: 'transparent',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: options
+    });
+  }
+
+  // Charts für PPO mit Stable-Baselines3
+  const ctxPpoSb3Reward  = document.getElementById('ppo_sb3_reward').getContext('2d');
+  createChart(ctxPpoSb3Reward, 'Reward per Minibatch', ppoSb3Reward, 'Reward', 'rgba(54, 162, 235, 1)');
+
+  const ctxPpoSb3Episode = document.getElementById('ppo_sb3_episode').getContext('2d');
+  createChart(ctxPpoSb3Episode, 'Episode Length per Minibatch', ppoSb3Episode, 'Frames', 'rgba(70, 130, 180, 1)');
+
+  // Charts für PPO ohne Stable-Baselines3
+  const ctxPpoNoSb3Reward = document.getElementById('ppo_no_sb3_reward').getContext('2d');
+  createChart(ctxPpoNoSb3Reward, 'Reward per Minibatch', ppoNoSb3Reward, 'Reward', 'rgba(30, 144, 255, 1)');
+
+  const ctxPpoNoSb3Episode = document.getElementById('ppo_no_sb3_episode').getContext('2d');
+  createChart(ctxPpoNoSb3Episode, 'Episode Length per Minibatch', ppoNoSb3Episode, 'Frames', 'rgba(0, 191, 255, 1)');
+
+  // Charts für DQN
+  const ctxDqnReward = document.getElementById('dqn_reward').getContext('2d');
+  createChart(ctxDqnReward, 'Reward per Minibatch', dqnReward, 'Reward', 'rgba(65, 105, 225, 1)');
+
+  const ctxDqnEpisode = document.getElementById('dqn_episode').getContext('2d');
+  createChart(ctxDqnEpisode, 'Episode Length per Minibatch', dqnEpisode, 'Frames', 'rgba(100, 149, 237, 1)');
+</script>
 
 
 
@@ -724,6 +851,8 @@
       <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
       
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+        <script src="../js/chart.js"></script>
       
     
   </body>
