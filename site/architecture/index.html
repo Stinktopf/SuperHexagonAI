@@ -12,7 +12,7 @@
         <link rel="prev" href="../getting-started/">
       
       
-        <link rel="next" href="../implementation/">
+        <link rel="next" href="../interface/">
       
       
       <link rel="icon" href="../assets/icon.svg">
@@ -268,16 +268,19 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../implementation/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../interface/" class="md-tabs__link">
+          
   
     
   
   Implementation
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -468,9 +471,36 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../implementation/" class="md-nav__link">
+    
+    
+      
         
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Implementation
@@ -478,7 +508,107 @@
   </span>
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Implementation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interface/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Superhexagon Interface
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Environment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sb3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Training with Stable-Baselines3
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../no_sb3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Training witout Stable-Baselines3
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -526,7 +656,7 @@
   <h1>Architecture</h1>
 
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p>The architecture uses memory manipulation to extract the game state directly from RAM, train an agent with Proximal Policy Optimization (PPO), and enable it to execute its own inputs in the game. This approach is based on the original memory manipulation from <a href="https://github.com/polarbart/SuperHexagonAI">SuperHexagonAI</a>. <strong>TrainerPPO</strong> handles training using <strong>SuperHexagonGymEnv</strong>, which processes the game state and defines possible actions. <strong>SuperHexagonInterface</strong> acts as a bridge to the game, leveraging <strong>RLHook</strong> to read from and write to <strong>SuperHexagonExe</strong>’s memory, allowing the agent to control the game autonomously.</p>
+<p>The architecture uses memory manipulation to extract the game state directly from RAM, train an agent with Proximal Policy Optimization (PPO), and enable it to execute its own inputs in the game. This approach is based on the original memory manipulation from <a href="https://github.com/polarbart/SuperHexagonAI">SuperHexagonAI</a>. There are two trainers, one with Stable-baselines3 and one that uses PyTorch, which handle the training via a unified Gymnasium environment. The environment interacts with the game via a C++ interface and memory access.</p>
 <h2 id="diagram">Diagram<a class="headerlink" href="#diagram" title="Permanent link">&para;</a></h2>
 <div align="center">
   <img src="../images/architecture.svg" width="100%">
@@ -594,7 +724,7 @@
     
       <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
       
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.0.0/mermaid.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
     
   </body>

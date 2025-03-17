@@ -8,6 +8,7 @@ from time import sleep
 from subprocess import Popen
 from dataclasses import dataclass
 
+
 @dataclass()
 class Wall:
     slot: int
@@ -17,13 +18,16 @@ class Wall:
     unk2: int
     unk3: int
 
-    def __init__(self, slot: int, distance: int, enabled: int, fill: [int], unk2: int, unk3: int):
+    def __init__(
+        self, slot: int, distance: int, enabled: int, fill: [int], unk2: int, unk3: int
+    ):
         self.slot = slot
         self.distance = distance
         self.enabled = enabled
         self.fill = fill
         self.unk2 = unk2
         self.unk3 = unk3
+
 
 class Recorder:
     def __init__(self, record=True):
@@ -40,7 +44,7 @@ class Recorder:
     def add_frame(self, frame):
         self.frames.append(frame[::-1])
 
-    def save(self, filename, fps, codec='FFV1', file_ending='.mp4'):
+    def save(self, filename, fps, codec="FFV1", file_ending=".mp4"):
         # ffmpeg -i input -c:v h264 -b 1000k output
         fourcc = cv2.VideoWriter_fourcc(*codec)
         height, width, _ = self.frames[0].shape
@@ -60,12 +64,12 @@ class SuperHexagonInterface:
     n_levels = 6
 
     def __init__(
-            self,
-            frame_skip=4,
-            super_hexagon_path='C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe',
-            run_afap=True,
-            record=False,
-            allow_game_restart=False
+        self,
+        frame_skip=4,
+        super_hexagon_path="C:\\Program Files (x86)\\Steam\\steamapps\\common\\Super Hexagon\\superhexagon.exe",
+        run_afap=True,
+        record=False,
+        allow_game_restart=False,
     ):
         self.game_process = None
         self.game_process = None
@@ -105,7 +109,9 @@ class SuperHexagonInterface:
         print("Debug Mode Activated" if self.debug_mode else "Debug Mode Deactivated")
 
     def _esc(self, down):
-        self.game.write_byte('superhexagon.exe', [0x00294B00, 0x42877], 1 if down else 0)
+        self.game.write_byte(
+            "superhexagon.exe", [0x00294B00, 0x42877], 1 if down else 0
+        )
 
     def _press_esc(self):
         self.game.step(False)
@@ -117,78 +123,84 @@ class SuperHexagonInterface:
 
     def _left(self, down):
         """
-        **_left()**
+        **_left**
 
         Simulates pressing the **Left** key in the game.
 
         Args:
             down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
         """
-        self.game.write_byte('superhexagon.exe', [0x00294B00, 0x428BD], 1 if down else 0)
+        self.game.write_byte(
+            "superhexagon.exe", [0x00294B00, 0x428BD], 1 if down else 0
+        )
 
     def _right(self, down):
         """
-        **_right()**
+        **_right**
 
         Simulates pressing the **Right** key in the game.
 
         Args:
             down (bool): If True, presses the key (writes 1 to memory); otherwise, releases it (writes 0).
         """
-        self.game.write_byte('superhexagon.exe', [0x00294B00, 0x428C0], 1 if down else 0)
+        self.game.write_byte(
+            "superhexagon.exe", [0x00294B00, 0x428C0], 1 if down else 0
+        )
 
     def _space(self, down):
-        self.game.write_byte('superhexagon.exe', [0x00294B00, 0x4287C], 1 if down else 0)
+        self.game.write_byte(
+            "superhexagon.exe", [0x00294B00, 0x4287C], 1 if down else 0
+        )
 
     def _get_main_menu_selection(self):
-        return self.game.read_byte('superhexagon.exe', [0x00294B00, 0x111EC])
+        return self.game.read_byte("superhexagon.exe", [0x00294B00, 0x111EC])
 
     def _get_current_menu(self):
-        return self.game.read_byte('superhexagon.exe', [0x00294B00, 0x48])
+        return self.game.read_byte("superhexagon.exe", [0x00294B00, 0x48])
 
     def get_level(self):
-        t = self.game.read_byte('superhexagon.exe', [0x00294B00, 0x54CC])
+        t = self.game.read_byte("superhexagon.exe", [0x00294B00, 0x54CC])
         return (-t) % 6
 
     def get_triangle_angle(self):
         """
-        **get_triangle_angle()**
+        **get_triangle_angle**
 
         Retrieves the player's rotation angle in degrees.
 
         Returns:
             (int): The rotation angle of the player (0-360 degrees).
         """
-        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2958])
+        return self.game.read_dword("superhexagon.exe", [0x00294B00, 0x2958])
 
     def get_world_angle(self):
-        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1AC])
+        return self.game.read_dword("superhexagon.exe", [0x00294B00, 0x1AC])
 
     def get_num_slots(self):
         """
-        **get_num_slots()**
+        **get_num_slots**
 
         Retrieves the total number of slots in the game.
 
         Returns:
             (int): The number of available slots.
         """
-        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x1BC])
+        return self.game.read_dword("superhexagon.exe", [0x00294B00, 0x1BC])
 
     def get_num_walls(self):
         """
-        **get_num_walls()**
+        **get_num_walls**
 
         Retrieves the total number of walls currently present in the game.
 
         Returns:
             (int): The number of walls.
         """
-        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2930])
+        return self.game.read_dword("superhexagon.exe", [0x00294B00, 0x2930])
 
     def get_triangle_slot(self):
         """
-        **get_triangle_slot()**
+        **get_triangle_slot**
 
         Determines the player's current slot based on their rotation angle.
 
@@ -198,14 +210,14 @@ class SuperHexagonInterface:
         return floor(self.get_triangle_angle() / 360.0 * self.get_num_slots())
 
     def get_n_survived_frames(self):
-        return self.game.read_dword('superhexagon.exe', [0x00294B00, 0x2988])
+        return self.game.read_dword("superhexagon.exe", [0x00294B00, 0x2988])
 
     def _reset_rotation(self):
-        self.game.write_dword('superhexagon.exe', [0x00294B00, 0x1AC], 1)
+        self.game.write_dword("superhexagon.exe", [0x00294B00, 0x1AC], 1)
 
     def get_walls(self):
         """
-        **get_walls()**
+        **get_walls**
 
         Retrieves information about all active walls in the game.
 
@@ -217,32 +229,59 @@ class SuperHexagonInterface:
 
         for i in range(num_walls):
             base_addr = 0x220 + i * 20  # Each Wall struct is 20 bytes (0x14)
-            slot = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr])
-            distance = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 4])
-            enabled = self.game.read_byte('superhexagon.exe', [0x00294B00, base_addr + 8])
-            fill = [] # Padding to align dwords
+            slot = self.game.read_dword("superhexagon.exe", [0x00294B00, base_addr])
+            distance = self.game.read_dword(
+                "superhexagon.exe", [0x00294B00, base_addr + 4]
+            )
+            enabled = self.game.read_byte(
+                "superhexagon.exe", [0x00294B00, base_addr + 8]
+            )
+            fill = []  # Padding to align dwords
             for j in range(3):
-                fill.append(self.game.read_byte('superhexagon.exe', [0x00294B00, base_addr + 9 + j]))
+                fill.append(
+                    self.game.read_byte(
+                        "superhexagon.exe", [0x00294B00, base_addr + 9 + j]
+                    )
+                )
 
-            unk2 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 12])
-            unk3 = self.game.read_dword('superhexagon.exe', [0x00294B00, base_addr + 16])
+            unk2 = self.game.read_dword(
+                "superhexagon.exe", [0x00294B00, base_addr + 12]
+            )
+            unk3 = self.game.read_dword(
+                "superhexagon.exe", [0x00294B00, base_addr + 16]
+            )
 
-            walls.append(Wall(slot=slot, distance=distance, enabled=enabled, fill=fill, unk2=unk2, unk3=unk3))
+            walls.append(
+                Wall(
+                    slot=slot,
+                    distance=distance,
+                    enabled=enabled,
+                    fill=fill,
+                    unk2=unk2,
+                    unk3=unk3,
+                )
+            )
 
         return walls
 
     def _restart_game(self):
-        assert self.allow_game_restart, "in order to restart the game 'allow_game_restart' must be set to True"
+        assert (
+            self.allow_game_restart
+        ), "in order to restart the game 'allow_game_restart' must be set to True"
         self.game = None
         sleep(1)
         if self.game_process is not None:
             self.game_process.terminate()
-        self.game_process = Popen([self.super_hexagon_path], cwd=os.path.dirname(self.super_hexagon_path))
+        self.game_process = Popen(
+            [self.super_hexagon_path], cwd=os.path.dirname(self.super_hexagon_path)
+        )
         sleep(10)
         self._attach_game()
 
     def _attach_game(self):
-        self.game = GameInterface('superhexagon.exe', PixelFormat.RGB, PixelDataType.UINT8)
+        self.game = GameInterface(
+            "superhexagon.exe", PixelFormat.RGB, PixelDataType.UINT8
+        )
 
         # make the game think it runs at 62.5 FPS no matter how frequently self.game.step is called.
         # afap -> as fast as possible
@@ -272,7 +311,9 @@ class SuperHexagonInterface:
                 f = self.game.step(True)
                 if f[240, 384, 0] == 255:  # main menu
 
-                    while self._get_main_menu_selection() != 0:  # rotate to 'start game'
+                    while (
+                        self._get_main_menu_selection() != 0
+                    ):  # rotate to 'start game'
                         self.game.step(False)
                         self._right(True)
                         for _ in range(5):
@@ -327,8 +368,20 @@ class SuperHexagonInterface:
             self.game.step(False)
 
     def _preprocess_frame(self, frame):
-        f = cv2.cvtColor(cv2.resize(frame[:, 144:624], self.frame_size, interpolation=cv2.INTER_NEAREST), cv2.COLOR_RGB2GRAY)
-        fc = cv2.cvtColor(cv2.resize(frame[150:330, 294:474], self.frame_size_cropped, interpolation=cv2.INTER_NEAREST), cv2.COLOR_RGB2GRAY)
+        f = cv2.cvtColor(
+            cv2.resize(
+                frame[:, 144:624], self.frame_size, interpolation=cv2.INTER_NEAREST
+            ),
+            cv2.COLOR_RGB2GRAY,
+        )
+        fc = cv2.cvtColor(
+            cv2.resize(
+                frame[150:330, 294:474],
+                self.frame_size_cropped,
+                interpolation=cv2.INTER_NEAREST,
+            ),
+            cv2.COLOR_RGB2GRAY,
+        )
         center_color = f[self.frame_size[0] // 2, self.frame_size[1] // 2]
         if center_color > 200:
             return f < 200, fc < 200
@@ -370,7 +423,6 @@ class SuperHexagonInterface:
 
         if self.slow_mode:
             sleep(0.05)
-
 
         if action == 1:
             self._left(True)

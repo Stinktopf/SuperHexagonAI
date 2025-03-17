@@ -20,7 +20,7 @@ The observation space consists of several variables that provide insights into t
 <div align="left">
   <img src="../images/player_angle.svg" width="70%">
 </div>
-::: trainer_PPO_GYM.SuperHexagonGymEnv._get_norm_player_angle
+::: environment.SuperHexagonGymEnv._get_norm_player_angle
 
 - **[1]: Direction indicator to next free slot:**
 The image below shows an example scenario. The method retrieves all walls and finds the edges of the closest free slot in both directions. After calculating the delta angle of both edges in relation to the player, it returns the direction with the minimal value (For discrete value buckets, see the method definition below).  
@@ -28,14 +28,14 @@ The image below shows an example scenario. The method retrieves all walls and fi
 <div align="center">
   <img src="../images/direction_indicator.drawio.svg" width="70%">
 </div>
-::: trainer_PPO_GYM.SuperHexagonGymEnv._get_direction_indicator
+::: environment.SuperHexagonGymEnv._get_direction_indicator
 
 - **[2-7]: Normalized wall distances per slot:**
-  ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_norm_wall_distances
+  ::: environment.SuperHexagonGymEnv._get_norm_wall_distances
 
 These values are calculated at each step in the `_get_state()` method and are used as inputs for the model:
 
-- ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_state
+- ::: environment.SuperHexagonGymEnv._get_state
 
 ## Reward Calculation
 
@@ -53,7 +53,7 @@ The reward system was refined multiple times throughout the agent's development.
 
 > "Free slot" is defined as a slot where, if the player remains in it, they will transition to the next wave of walls without resulting in a gameover.
 
-- ::: trainer_PPO_GYM.SuperHexagonGymEnv._get_reward
+- ::: environment.SuperHexagonGymEnv._get_reward
 
 ## Debugging Controls
 

@@ -30,7 +30,7 @@ To install **Visual Studio Community Edition 2022**, follow these steps:
 
 Ensure you have Python installed (preferably **Python 3.12** for CUDA support). The following Python libraries are required:
 
-```bash
+```python
 ghapi==1.0.6
 gymnasium==1.0.0
 keyboard==0.13.5
@@ -48,7 +48,7 @@ torch==2.7.0.dev20250228+cu128
 
 To install them, run:
 
-```bash
+```powershell
 python -m pip install -r requirements.txt --index-url https://download.pytorch.org/whl/nightly/cu128
 ```
 
@@ -76,7 +76,7 @@ Additionally, ensure that both **the Python process and the game process are run
 
 To download the necessary files, run:
 
-```bash
+```powershell
 git clone https://github.com/Stinktopf/SuperHexagonAI.git
 cd SuperHexagonAI
 ```
@@ -87,7 +87,7 @@ cd SuperHexagonAI
 
 To compile the necessary binaries, execute:
 
-```bash
+```powershell
 cd RLHookLib
 python compile_additional_binaries.py
 ```
@@ -98,7 +98,7 @@ python compile_additional_binaries.py
 
 Install the library globally using pip:
 
-```bash
+```powershell
 pip install .
 ```
 
@@ -106,6 +106,12 @@ pip install .
 
 Execute a trainer in an administrator command line:
 
-```bash
+```powershell
 python trainer_PPO_GYM_SB3.py
+```
+
+or 
+
+```powershell
+python trainer_PPO_GYM.py
 ```
