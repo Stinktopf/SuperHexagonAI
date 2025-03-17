@@ -662,7 +662,6 @@
 
   <h1>Performance</h1>
 
-<p>The performance of our approach is described below.</p>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -710,16 +709,34 @@
 </div>
 
 <script>
-  const labels = [1,2,3,4,5,6,7,8,9,10];
 
-  const ppoSb3Reward   = [57,66,58,62,53,60,58,45,49,70];
-  const ppoSb3Episode  = [144,158,144,146,130,141,133,121,127,146];
+  function parseCSV(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',');
+      const obj = {};
+      headers.forEach((header, j) => {
 
-  const ppoNoSb3Reward = [50,55,60,65,70,75,80,85,90,95];
-  const ppoNoSb3Episode= [140,145,150,155,160,165,170,175,180,185];
+        obj[header] = parseFloat(values[j]);
+      });
+      data.push(obj);
+    }
+    return data;
+  }
 
-  const dqnReward      = [40,42,44,46,48,50,52,54,56,58];
-  const dqnEpisode     = [130,135,140,145,150,155,160,165,170,175];
+
+  function loadCSV(url, callback) {
+    fetch(url)
+      .then(response => response.text())
+      .then(text => {
+        const data = parseCSV(text);
+        callback(data);
+      })
+      .catch(error => console.error('Fehler beim Laden von CSV:', error));
+  }
+
 
   const commonOptions = {
     plugins: {
@@ -745,7 +762,9 @@
     }
   };
 
-  function createChart(ctx, titleText, dataArray, yAxisTitle, borderColor) {
+
+  function createMultiDatasetChart(ctx, titleText, labels, minData, avgData, maxData, yAxisTitle) {
+
     const options = JSON.parse(JSON.stringify(commonOptions));
     options.plugins.title.text = titleText;
     options.scales.y.title.text = yAxisTitle;
@@ -753,39 +772,70 @@
       type: 'line',
       data: {
         labels: labels,
-        datasets: [{
-          label: titleText,
-          data: dataArray,
-          borderColor: borderColor,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.1
-        }]
+        datasets: [
+          {
+            label: 'Min',
+            data: minData,
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          },
+          {
+            label: 'Avg',
+            data: avgData,
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          },
+          {
+            label: 'Max',
+            data: maxData,
+            borderColor: 'rgba(75, 192, 75, 1)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+          }
+        ]
       },
       options: options
     });
   }
 
-  // Charts für PPO mit Stable-Baselines3
-  const ctxPpoSb3Reward  = document.getElementById('ppo_sb3_reward').getContext('2d');
-  createChart(ctxPpoSb3Reward, 'Reward per Minibatch', ppoSb3Reward, 'Reward', 'rgba(54, 162, 235, 1)');
 
-  const ctxPpoSb3Episode = document.getElementById('ppo_sb3_episode').getContext('2d');
-  createChart(ctxPpoSb3Episode, 'Episode Length per Minibatch', ppoSb3Episode, 'Frames', 'rgba(70, 130, 180, 1)');
+  function createChartsFromData(data, rewardCanvasId, episodeCanvasId) {
+    const labels = data.map(row => row['Minibatch']);
 
-  // Charts für PPO ohne Stable-Baselines3
-  const ctxPpoNoSb3Reward = document.getElementById('ppo_no_sb3_reward').getContext('2d');
-  createChart(ctxPpoNoSb3Reward, 'Reward per Minibatch', ppoNoSb3Reward, 'Reward', 'rgba(30, 144, 255, 1)');
+    const minReward = data.map(row => row['Min Reward']);
+    const avgReward = data.map(row => row['Avg Reward']);
+    const maxReward = data.map(row => row['Max Reward']);
 
-  const ctxPpoNoSb3Episode = document.getElementById('ppo_no_sb3_episode').getContext('2d');
-  createChart(ctxPpoNoSb3Episode, 'Episode Length per Minibatch', ppoNoSb3Episode, 'Frames', 'rgba(0, 191, 255, 1)');
+    const minEpisode = data.map(row => row['Min Episode Length']);
+    const avgEpisode = data.map(row => row['Avg Episode Length']);
+    const maxEpisode = data.map(row => row['Max Episode Length']);
 
-  // Charts für DQN
-  const ctxDqnReward = document.getElementById('dqn_reward').getContext('2d');
-  createChart(ctxDqnReward, 'Reward per Minibatch', dqnReward, 'Reward', 'rgba(65, 105, 225, 1)');
+    const ctxReward = document.getElementById(rewardCanvasId).getContext('2d');
+    createMultiDatasetChart(ctxReward, 'Reward per Minibatch', labels, minReward, avgReward, maxReward, 'Reward');
 
-  const ctxDqnEpisode = document.getElementById('dqn_episode').getContext('2d');
-  createChart(ctxDqnEpisode, 'Episode Length per Minibatch', dqnEpisode, 'Frames', 'rgba(100, 149, 237, 1)');
+    const ctxEpisode = document.getElementById(episodeCanvasId).getContext('2d');
+    createMultiDatasetChart(ctxEpisode, 'Episode Length per Minibatch', labels, minEpisode, avgEpisode, maxEpisode, 'Frames');
+  }
+
+  loadCSV('ppo_sb3.csv', function(data) {
+    createChartsFromData(data, 'ppo_sb3_reward', 'ppo_sb3_episode');
+  });
+
+  loadCSV('ppo_no_sb3.csv', function(data) {
+    createChartsFromData(data, 'ppo_no_sb3_reward', 'ppo_no_sb3_episode');
+  });
+
+  loadCSV('dqn.csv', function(data) {
+    createChartsFromData(data, 'dqn_reward', 'dqn_episode');
+  });
 </script>
 
 
