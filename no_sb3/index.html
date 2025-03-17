@@ -816,7 +816,7 @@
 <a id="trainer_PPO_GYM.ActorCritic.__init__"></a>
     <div class="doc doc-contents first">
 
-        <p><strong>__init__(self, input_dim, num_actions, net_arch)</strong></p>
+        <p><strong>__init__</strong></p>
 
 
             <details class="quote">
@@ -835,7 +835,7 @@
 <span class="normal">21</span>
 <span class="normal">22</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">num_actions</span><span class="p">,</span> <span class="n">net_arch</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    **\_\_init\_\_(self, input_dim, num_actions, net_arch)**&quot;&quot;&quot;</span>
+<span class="sd">    **\_\_init\_\_**&quot;&quot;&quot;</span>
     <span class="nb">super</span><span class="p">(</span><span class="n">ActorCritic</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="n">layers</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">last_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
@@ -861,7 +861,7 @@
 <a id="trainer_PPO_GYM.ActorCritic.forward"></a>
     <div class="doc doc-contents first">
 
-        <p><strong>forward(self, x)</strong></p>
+        <p><strong>forward</strong></p>
 
 
             <details class="quote">
@@ -872,7 +872,7 @@
 <span class="normal">27</span>
 <span class="normal">28</span>
 <span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;**forward(self, x)**&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;**forward**&quot;&quot;&quot;</span>
     <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">policy_head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
