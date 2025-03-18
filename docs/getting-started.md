@@ -21,18 +21,18 @@ Please follow these steps to install **Visual Studio Community Edition 2022**, *
 
 1. Download and run the [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/).
 
-   - During installation, select these components:
-     - MSVC C++ x64/x86 Build Tools
-     - C++ CMake Tools for Windows
-     - Windows 11 SDK
+    - During installation, select these components:
+      - MSVC C++ x64/x86 Build Tools
+      - C++ CMake Tools for Windows
+      - Windows 11 SDK
 
 2. Download and install [CMake](https://cmake.org/download/).
 
-   - Ensure CMake is added to your system PATH.
+    - Ensure CMake is added to your system PATH.
 
 3. Download and install [Python 3.12](https://www.python.org/downloads/release/python-3129/).
-   - Ensure Python is added to your system PATH.
-   - The Microsoft Store version doesn't work because it blocks system-wide package installation needed for the RLHook library.
+    - Ensure Python is added to your system PATH.
+    - The Microsoft Store version doesn't work because it blocks system-wide package installation needed for the RLHook library.
 
 ---
 
