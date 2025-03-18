@@ -68,9 +68,9 @@ torch==2.6.0
 To use this setup, you need **Super Hexagon in the Pre-Neo Steam Beta version**. Ensure the following settings are applied:
 
 - **Run as Administrator:**
-  - Right-click `superhexagon.exe`, select `Properties`, go to the `Compatibility` tab, and check **"Run this program as an administrator"**.
+    - Right-click `superhexagon.exe`, select `Properties`, go to the `Compatibility` tab, and check **"Run this program as an administrator"**.
 - **Windowed Mode & VSync:**
-  - The game must be in **windowed mode**, and **VSync should be disabled**.
+    - The game must be in **windowed mode**, and **VSync should be disabled**.
 
 <div align="center">
   <img src="../images/steam.png" width="50%">
