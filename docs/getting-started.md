@@ -22,9 +22,9 @@ Please follow these steps to install **Visual Studio Community Edition 2022**, *
 1. Download and run the [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/).
 
     - During installation, select these components:
-      - MSVC C++ x64/x86 Build Tools
-      - C++ CMake Tools for Windows
-      - Windows 11 SDK
+        - MSVC C++ x64/x86 Build Tools
+        - C++ CMake Tools for Windows
+        - Windows 11 SDK
 
 2. Download and install [CMake](https://cmake.org/download/).
 
@@ -115,6 +115,8 @@ Go to the repository root:
 ```powershell
 cd ..
 ```
+
+---
 
 ### Step 7: Run the Trainer
 
