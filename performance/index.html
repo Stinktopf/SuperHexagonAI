@@ -724,105 +724,110 @@
 <h2 id="comparison-with-existing-approach">Comparison with existing approach<a class="headerlink" href="#comparison-with-existing-approach" title="Permanent link">&para;</a></h2>
 <p>Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO (using stable baselines3). However, our environment lacks precision, and it's important to note that the image-based DQN method outperforms our approach by generalizing more effectively across various game stages.</p>
 <script>
-
-  function parseCSV(csv) {
+function parseCSV(csv) {
     const lines = csv.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
     const data = [];
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      const obj = {};
-      headers.forEach((header, j) => {
+        const values = lines[i].split(',');
+        const obj = {};
+        headers.forEach((header, j) => {
 
-        obj[header] = parseFloat(values[j]);
-      });
-      data.push(obj);
+            obj[header] = parseFloat(values[j]);
+        });
+        data.push(obj);
     }
     return data;
-  }
+}
 
+function getFontColor(isDarkMode) {
+    return isDarkMode ? 'hsla(225deg,15%,90%,0.82)' : '#000000de';
+}
 
-  function loadCSV(url, callback) {
+function loadCSV(url, callback) {
     fetch(url)
-      .then(response => response.text())
-      .then(text => {
-        const data = parseCSV(text);
-        callback(data);
-      })
-      .catch(error => console.error('Fehler beim Laden von CSV:', error));
-  }
+        .then(response => response.text())
+        .then(text => {
+            const data = parseCSV(text);
+            callback(data);
+        })
+        .catch(error => console.error('Fehler beim Laden von CSV:', error));
+}
 
-
-  const commonOptions = {
-    plugins: {
-      legend: {
-        labels: { color: '#fff' }
-      },
-      title: {
-        display: true,
-        color: '#fff'
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#fff' },
-        title: { display: true, text: 'Minibatch', color: '#fff' },
-        grid: { color: 'rgba(255, 255, 255, 0.2)' }
-      },
-      y: {
-        ticks: { color: '#fff' },
-        title: { display: true, text: '', color: '#fff' },
-        grid: { color: 'rgba(255, 255, 255, 0.2)' }
-      }
+function getCommonOptions(isDarkMode) {
+    const fontColor = getFontColor(isDarkMode);
+    return {
+        plugins: {
+            legend: {
+                labels: {color: fontColor}
+            },
+            title: {
+                display: true,
+                color: fontColor
+            }
+        },
+        scales: {
+            x: {
+                ticks: {color: fontColor},
+                title: {display: true, text: 'Minibatch', color: fontColor},
+                grid: {color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : '#bbb'}
+            },
+            y: {
+                ticks: {color: fontColor},
+                title: {display: true, text: '', color: fontColor},
+                grid: {color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : '#bbb'}
+            }
+        }
     }
-  };
+}
 
 
-  function createMultiDatasetChart(ctx, titleText, labels, minData, avgData, maxData, yAxisTitle) {
+function createMultiDatasetChart(ctx, titleText, labels, minData, avgData, maxData, yAxisTitle, isDarkMode) {
 
-    const options = JSON.parse(JSON.stringify(commonOptions));
+    const options = JSON.parse(JSON.stringify(getCommonOptions(isDarkMode)));
     options.plugins.title.text = titleText;
     options.scales.y.title.text = yAxisTitle;
     return new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Min',
-            data: minData,
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'transparent',
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0
-          },
-          {
-            label: 'Avg',
-            data: avgData,
-            borderColor: 'rgba(54, 162, 235, 1)',
-            backgroundColor: 'transparent',
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0
-          },
-          {
-            label: 'Max',
-            data: maxData,
-            borderColor: 'rgba(75, 192, 75, 1)',
-            backgroundColor: 'transparent',
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0
-          }
-        ]
-      },
-      options: options
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Min',
+                    data: minData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Avg',
+                    data: avgData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Max',
+                    data: maxData,
+                    borderColor: 'rgba(75, 192, 75, 1)',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: options
     });
-  }
+}
 
+let charts = [];
 
-  function createChartsFromData(data, rewardCanvasId, episodeCanvasId) {
+function createChartsFromData(data, rewardCanvasId, episodeCanvasId, isDarkMode) {
     const labels = data.map(row => row['Minibatch']);
 
     const minReward = data.map(row => row['Min Reward']);
@@ -834,23 +839,44 @@
     const maxEpisode = data.map(row => row['Max Episode Length']);
 
     const ctxReward = document.getElementById(rewardCanvasId).getContext('2d');
-    createMultiDatasetChart(ctxReward, 'Reward per Minibatch', labels, minReward, avgReward, maxReward, 'Reward');
+    charts.push(createMultiDatasetChart(ctxReward, 'Reward per Minibatch', labels, minReward, avgReward, maxReward, 'Reward', isDarkMode));
 
     const ctxEpisode = document.getElementById(episodeCanvasId).getContext('2d');
-    createMultiDatasetChart(ctxEpisode, 'Episode Length per Minibatch', labels, minEpisode, avgEpisode, maxEpisode, 'Frames');
-  }
+    charts.push(createMultiDatasetChart(ctxEpisode, 'Episode Length per Minibatch', labels, minEpisode, avgEpisode, maxEpisode, 'Frames', isDarkMode));
+}
 
-  loadCSV('ppo_sb3.csv', function(data) {
-    createChartsFromData(data, 'ppo_sb3_reward', 'ppo_sb3_episode');
-  });
+function loadCharts(isDarkMode) {
+    charts.forEach(chart => chart.destroy());
+    charts = [];
+    loadCSV('ppo_sb3.csv', function (data) {
+        createChartsFromData(data, 'ppo_sb3_reward', 'ppo_sb3_episode', isDarkMode);
+    });
 
-  loadCSV('ppo_no_sb3.csv', function(data) {
-    createChartsFromData(data, 'ppo_no_sb3_reward', 'ppo_no_sb3_episode');
-  });
+    loadCSV('ppo_no_sb3.csv', function (data) {
+        createChartsFromData(data, 'ppo_no_sb3_reward', 'ppo_no_sb3_episode', isDarkMode);
+    });
 
-  loadCSV('dqn.csv', function(data) {
-    createChartsFromData(data, 'dqn_reward', 'dqn_episode');
-  });
+    loadCSV('dqn.csv', function (data) {
+        createChartsFromData(data, 'dqn_reward', 'dqn_episode', isDarkMode);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const themeForm = document.getElementsByClassName('md-header__option')[0]
+
+    const isDarkMode = JSON.parse(localStorage.getItem('/.__palette')).index == 0
+    loadCharts(isDarkMode);
+
+    if (themeForm) {
+        themeForm.addEventListener("change", function (event) {
+            const isDarkMode = event.target.id === "__palette_0";
+            console.log("Theme changed! Dark mode:", isDarkMode);
+
+            loadCharts(isDarkMode);
+        });
+    }
+});
+
 </script>
 
 
