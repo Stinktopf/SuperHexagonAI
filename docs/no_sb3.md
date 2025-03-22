@@ -48,40 +48,33 @@ To balance exploration and exploitation, the entropy coefficient (`ent_coef`) is
 ::: trainer_PPO_GYM.PPOAgent.update_ent_coef
 
 
-## Generalized Advantage Estimation (GAE)
+## Generalized Advantage Estimation (GAE) [[1]](https://arxiv.org/abs/1506.02438) [[2]](https://arxiv.org/abs/1707.06347)
 
 After collecting a batch of transitions, GAE computes advantages, reducing variance while keeping the estimator unbiased.
  
 The advantage function is computed as:
 
 $$
-\delta_t = r_t + \gamma\,(1-d_{t+1})\,V(s_{t+1}) - V(s_t)
+\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + ... + ... + (\gamma\lambda)^{T-t+1}\delta_{T-1} \text{,}
 $$
 
 $$
-A_t = \delta_t + \gamma\,\lambda\,(1-d_{t+1})\,A_{t+1}
-$$
-
-$$
-R_t = A_t + V(s_t)
+\text{where } \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
 $$
 
 This is shown in the following code:
 
 ::: trainer_PPO_GYM.PPOAgent.compute_gae
 
-
-Here is the revised version with the missing mathematical formulas for the **Mini-Batch Updates**, now in **English**:
-
 ## Mini-Batch Updates
 
 Once the advantages are computed, the data is shuffled and divided into mini-batches for policy and value function updates.
 
-### Forward Pass & Probability Ratio
+### Forward Pass & Probability Ratio [[2]](https://arxiv.org/abs/1707.06347)
 The PPO algorithm relies on the ratio between the new policy and the old policy to ensure that updates are constrained:
 
 $$
-r_t = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
+r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
 $$
 
 This ratio is computed in the code as follows:
@@ -91,12 +84,14 @@ logits, values_pred = self.model(mb_obs)
 ratio = torch.exp(new_logprobs - mb_old_logprobs)
 ```
 
-### Clipped Policy Loss
+### Clipped Policy Loss [[2]](https://arxiv.org/abs/1707.06347)
 The policy loss uses the Clipped Surrogate Objective to keep updates close to the previous policy:
 
 $$
-L^{\text{CLIP}}(\theta) = \mathbb{E}_t \left[ \min \left( r_t A_t, \text{clip}(r_t, 1 - \epsilon, 1 + \epsilon) A_t \right) \right]
+L^{\text{CLIP}}(\theta) = -\min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right)
 $$
+
+> Unlike the original PPO paper, which defines the objective as a maximization problem, our implementation adds a negative sign to transform it into a loss function for minimization.
 
 In code:
 
@@ -106,11 +101,11 @@ surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * mb_advant
 policy_loss = -torch.min(surr1, surr2).mean()
 ```
 
-### Value Loss
+### Value Loss [[2]](https://arxiv.org/abs/1707.06347)
 The value function is optimized using a Mean Squared Error (MSE) loss:
 
 $$
-L^{\text{VF}}(\theta) = \mathbb{E}_t \left[ (V_\theta(s_t) - R_t)^2 \right]
+L^{\text{VF}}(\theta) = (V_\theta(s_t) - V_t^{targ})^2
 $$
 
 In code:
@@ -119,11 +114,11 @@ In code:
 value_loss = ((mb_returns - values_pred.squeeze()) ** 2).mean()
 ```
 
-### Entropy Bonus
+### Entropy Bonus [[2]](https://arxiv.org/abs/1707.06347)
 The entropy is added to encourage exploration:
 
 $$
-L^{\text{ENT}}(\theta) = \mathbb{E}_t \left[ H(\pi_\theta) \right]
+L^{\text{ENT}}(\theta) = S[\pi_\theta](s_t)
 $$
 
 In code:
@@ -132,12 +127,14 @@ In code:
 entropy = dist.entropy().mean()
 ```
 
-### Final Loss and Parameter Update
+### Final Loss and Parameter Update [[2]](https://arxiv.org/abs/1707.06347)
 The total **PPO loss function** is:
 
 $$
-L(\theta) = L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta)
+L(\theta) = L^{\text{CLIP} + \text{VF} + \text{ENT}}(\theta) = \hat{\mathbb{E}}_t \left[ L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta) \right]
 $$
+
+> In contrast to the original PPO paper that formulates the objective for maximization, our implementation flips the signs to convert it into a minimization loss function.
 
 In code:
 
@@ -147,3 +144,9 @@ self.optimizer.zero_grad()
 loss.backward()
 self.optimizer.step()
 ```
+
+### References:
+
+[[1]: High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)
+
+[[2]: Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
