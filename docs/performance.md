@@ -54,7 +54,7 @@ The DQN approach briefly reached a maximum survival time of 25 seconds. However,
 </div>
 
 ## Comparison with existing approach
-Our approach performs reasonably well—achieving peak survival times of up to 33 seconds with PPO (using Stable-Baselines3). However, our environment lacks precision, and it's important to note that the image-based DQN method outperforms our approach by generalizing more effectively across various game stages.
+Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO (using stable baselines3). However, our environment lacks precision, and it's important to note that the image-based DQN method outperforms our approach by generalizing more effectively across various game stages.
 
 <script>
 
