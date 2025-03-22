@@ -202,7 +202,7 @@ function loadCharts(isDarkMode) {
 document.addEventListener("DOMContentLoaded", function () {
     const themeForm = document.getElementsByClassName('md-header__option')[0]
 
-    const isDarkMode = JSON.parse(localStorage.getItem('/.__palette')).index == 0
+    const isDarkMode = JSON.parse(localStorage.getItem('/.__palette'))?.index ?? 1 == 0
     loadCharts(isDarkMode);
 
     if (themeForm) {
