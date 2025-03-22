@@ -1,4 +1,3 @@
-# Introduction
 The following sections highlight the various ways in which we leveraged Large Language Models (LLMs) throughout the project. 
 From exploring the scope of the project, debugging, hyperparameter optimization and generating documentation, LLMs played a crucial role in enhancing efficiency and supporting development tasks.
 
