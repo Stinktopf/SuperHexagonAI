@@ -14,7 +14,7 @@
   }
 </style>
 
-The performance of our approach is outlined below.
+The performance of our approach is outlined below. All three models work on our environment.
 
 ## Proximal Policy Optimization with Stable-Baselines3
 The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.
@@ -54,7 +54,12 @@ The DQN approach briefly reached a maximum survival time of 25 seconds. However,
 </div>
 
 ## Comparison with existing approach
-Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO (using stable baselines3). However, our environment lacks precision, and it's important to note that the image-based DQN method outperforms our approach by generalizing more effectively across various game stages.
+Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO using Stable-Baselines3 and reaching usable results faster. However, our environment lacks precision and our experiments show that while our model quickly becomes effective, the image based DQN method eventually outperforms it by generalizing more effectively across various game stages and attaining a much higher maximum performance.
+
+
+
+
+
 
 <script>
 function parseCSV(csv) {
@@ -73,7 +78,6 @@ function parseCSV(csv) {
     return data;
 }
 
-// Function to get the current theme color
 function getFontColor(isDarkMode) {
     return isDarkMode ? 'hsla(225deg,15%,90%,0.82)' : '#000000de';
 }
