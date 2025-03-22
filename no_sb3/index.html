@@ -215,16 +215,19 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
   
     
   
   Home
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -353,9 +356,36 @@
   
   
   
-    <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Home
@@ -363,7 +393,49 @@
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage of LLMs
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -661,9 +733,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generalized-advantage-estimation-gae" class="md-nav__link">
+  <a href="#generalized-advantage-estimation-gae-1-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Generalized Advantage Estimation (GAE)
+      Generalized Advantage Estimation (GAE) [1] [2]
     </span>
   </a>
   
@@ -689,45 +761,54 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#forward-pass-probability-ratio" class="md-nav__link">
+  <a href="#forward-pass-probability-ratio-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Forward Pass &amp; Probability Ratio
+      Forward Pass &amp; Probability Ratio [2]
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#clipped-policy-loss" class="md-nav__link">
+  <a href="#clipped-policy-loss-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Clipped Policy Loss
+      Clipped Policy Loss [2]
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#value-loss" class="md-nav__link">
+  <a href="#value-loss-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Value Loss
+      Value Loss [2]
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#entropy-bonus" class="md-nav__link">
+  <a href="#entropy-bonus-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Entropy Bonus
+      Entropy Bonus [2]
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#final-loss-and-parameter-update" class="md-nav__link">
+  <a href="#final-loss-and-parameter-update-2" class="md-nav__link">
     <span class="md-ellipsis">
-      Final Loss and Parameter Update
+      Final Loss and Parameter Update [2]
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References:
     </span>
   </a>
   
@@ -928,31 +1009,23 @@
             </details>
     </div>
 
-</div><h2 id="generalized-advantage-estimation-gae">Generalized Advantage Estimation (GAE)<a class="headerlink" href="#generalized-advantage-estimation-gae" title="Permanent link">&para;</a></h2>
+</div><h2 id="generalized-advantage-estimation-gae-1-2">Generalized Advantage Estimation (GAE) <a href="https://arxiv.org/abs/1506.02438">[1]</a> <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#generalized-advantage-estimation-gae-1-2" title="Permanent link">&para;</a></h2>
 <p>After collecting a batch of transitions, GAE computes advantages, reducing variance while keeping the estimator unbiased.</p>
 <p>The advantage function is computed as:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-\delta_t = r_t + \gamma\,(1-d_{t+1})\,V(s_{t+1}) - V(s_t)
+\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + ... + ... + (\gamma\lambda)^{T-t+1}\delta_{T-1} \text{,}
 </div>
 <script type="math/tex; mode=display">
-\delta_t = r_t + \gamma\,(1-d_{t+1})\,V(s_{t+1}) - V(s_t)
+\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + ... + ... + (\gamma\lambda)^{T-t+1}\delta_{T-1} \text{,}
 </script>
 </div>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-A_t = \delta_t + \gamma\,\lambda\,(1-d_{t+1})\,A_{t+1}
+\text{where } \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
 </div>
 <script type="math/tex; mode=display">
-A_t = \delta_t + \gamma\,\lambda\,(1-d_{t+1})\,A_{t+1}
-</script>
-</div>
-<div class="arithmatex">
-<div class="MathJax_Preview">
-R_t = A_t + V(s_t)
-</div>
-<script type="math/tex; mode=display">
-R_t = A_t + V(s_t)
+\text{where } \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
 </script>
 </div>
 <p>This is shown in the following code:</p>
@@ -1027,80 +1100,88 @@ R_t = A_t + V(s_t)
             </details>
     </div>
 
-</div><p>Here is the revised version with the missing mathematical formulas for the <strong>Mini-Batch Updates</strong>, now in <strong>English</strong>:</p>
-<h2 id="mini-batch-updates">Mini-Batch Updates<a class="headerlink" href="#mini-batch-updates" title="Permanent link">&para;</a></h2>
+</div><h2 id="mini-batch-updates">Mini-Batch Updates<a class="headerlink" href="#mini-batch-updates" title="Permanent link">&para;</a></h2>
 <p>Once the advantages are computed, the data is shuffled and divided into mini-batches for policy and value function updates.</p>
-<h3 id="forward-pass-probability-ratio">Forward Pass &amp; Probability Ratio<a class="headerlink" href="#forward-pass-probability-ratio" title="Permanent link">&para;</a></h3>
+<h3 id="forward-pass-probability-ratio-2">Forward Pass &amp; Probability Ratio <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#forward-pass-probability-ratio-2" title="Permanent link">&para;</a></h3>
 <p>The PPO algorithm relies on the ratio between the new policy and the old policy to ensure that updates are constrained:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-r_t = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
+r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
 </div>
 <script type="math/tex; mode=display">
-r_t = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
+r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}
 </script>
 </div>
 <p>This ratio is computed in the code as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="n">logits</span><span class="p">,</span> <span class="n">values_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">mb_obs</span><span class="p">)</span>
 <span class="n">ratio</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">new_logprobs</span> <span class="o">-</span> <span class="n">mb_old_logprobs</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="clipped-policy-loss">Clipped Policy Loss<a class="headerlink" href="#clipped-policy-loss" title="Permanent link">&para;</a></h3>
+<h3 id="clipped-policy-loss-2">Clipped Policy Loss <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#clipped-policy-loss-2" title="Permanent link">&para;</a></h3>
 <p>The policy loss uses the Clipped Surrogate Objective to keep updates close to the previous policy:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-L^{\text{CLIP}}(\theta) = \mathbb{E}_t \left[ \min \left( r_t A_t, \text{clip}(r_t, 1 - \epsilon, 1 + \epsilon) A_t \right) \right]
+L^{\text{CLIP}}(\theta) = -\min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right)
 </div>
 <script type="math/tex; mode=display">
-L^{\text{CLIP}}(\theta) = \mathbb{E}_t \left[ \min \left( r_t A_t, \text{clip}(r_t, 1 - \epsilon, 1 + \epsilon) A_t \right) \right]
+L^{\text{CLIP}}(\theta) = -\min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right)
 </script>
 </div>
+<blockquote>
+<p>Unlike the original PPO paper, which defines the objective as a maximization problem, our implementation adds a negative sign to transform it into a loss function for minimization.</p>
+</blockquote>
 <p>In code:</p>
 <div class="highlight"><pre><span></span><code><span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">mb_advantages</span>
 <span class="n">surr2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_ratio</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">clip_ratio</span><span class="p">)</span> <span class="o">*</span> <span class="n">mb_advantages</span>
 <span class="n">policy_loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 </code></pre></div>
-<h3 id="value-loss">Value Loss<a class="headerlink" href="#value-loss" title="Permanent link">&para;</a></h3>
+<h3 id="value-loss-2">Value Loss <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#value-loss-2" title="Permanent link">&para;</a></h3>
 <p>The value function is optimized using a Mean Squared Error (MSE) loss:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-L^{\text{VF}}(\theta) = \mathbb{E}_t \left[ (V_\theta(s_t) - R_t)^2 \right]
+L^{\text{VF}}(\theta) = (V_\theta(s_t) - V_t^{targ})^2
 </div>
 <script type="math/tex; mode=display">
-L^{\text{VF}}(\theta) = \mathbb{E}_t \left[ (V_\theta(s_t) - R_t)^2 \right]
+L^{\text{VF}}(\theta) = (V_\theta(s_t) - V_t^{targ})^2
 </script>
 </div>
 <p>In code:</p>
 <div class="highlight"><pre><span></span><code><span class="n">value_loss</span> <span class="o">=</span> <span class="p">((</span><span class="n">mb_returns</span> <span class="o">-</span> <span class="n">values_pred</span><span class="o">.</span><span class="n">squeeze</span><span class="p">())</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 </code></pre></div>
-<h3 id="entropy-bonus">Entropy Bonus<a class="headerlink" href="#entropy-bonus" title="Permanent link">&para;</a></h3>
+<h3 id="entropy-bonus-2">Entropy Bonus <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#entropy-bonus-2" title="Permanent link">&para;</a></h3>
 <p>The entropy is added to encourage exploration:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-L^{\text{ENT}}(\theta) = \mathbb{E}_t \left[ H(\pi_\theta) \right]
+L^{\text{ENT}}(\theta) = S[\pi_\theta](s_t)
 </div>
 <script type="math/tex; mode=display">
-L^{\text{ENT}}(\theta) = \mathbb{E}_t \left[ H(\pi_\theta) \right]
+L^{\text{ENT}}(\theta) = S[\pi_\theta](s_t)
 </script>
 </div>
 <p>In code:</p>
 <div class="highlight"><pre><span></span><code><span class="n">entropy</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">entropy</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 </code></pre></div>
-<h3 id="final-loss-and-parameter-update">Final Loss and Parameter Update<a class="headerlink" href="#final-loss-and-parameter-update" title="Permanent link">&para;</a></h3>
+<h3 id="final-loss-and-parameter-update-2">Final Loss and Parameter Update <a href="https://arxiv.org/abs/1707.06347">[2]</a><a class="headerlink" href="#final-loss-and-parameter-update-2" title="Permanent link">&para;</a></h3>
 <p>The total <strong>PPO loss function</strong> is:</p>
 <div class="arithmatex">
 <div class="MathJax_Preview">
-L(\theta) = L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta)
+L(\theta) = L^{\text{CLIP} + \text{VF} + \text{ENT}}(\theta) = \hat{\mathbb{E}}_t \left[ L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta) \right]
 </div>
 <script type="math/tex; mode=display">
-L(\theta) = L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta)
+L(\theta) = L^{\text{CLIP} + \text{VF} + \text{ENT}}(\theta) = \hat{\mathbb{E}}_t \left[ L^{\text{CLIP}}(\theta) + c_1 L^{\text{VF}}(\theta) - c_2 L^{\text{ENT}}(\theta) \right]
 </script>
 </div>
+<blockquote>
+<p>In contrast to the original PPO paper that formulates the objective for maximization, our implementation flips the signs to convert it into a minimization loss function.</p>
+</blockquote>
 <p>In code:</p>
 <div class="highlight"><pre><span></span><code><span class="n">loss</span> <span class="o">=</span> <span class="n">policy_loss</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vf_coef</span> <span class="o">*</span> <span class="n">value_loss</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">ent_coef</span> <span class="o">*</span> <span class="n">entropy</span>
 <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
 <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
 </code></pre></div>
+<h3 id="references">References:<a class="headerlink" href="#references" title="Permanent link">&para;</a></h3>
+<p><a href="https://arxiv.org/abs/1506.02438">[1]: High-Dimensional Continuous Control Using Generalized Advantage Estimation</a></p>
+<p><a href="https://arxiv.org/abs/1707.06347">[2]: Proximal Policy Optimization Algorithms</a></p>
 
 
 

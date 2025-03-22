@@ -215,16 +215,19 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
   
     
   
   Home
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -353,9 +356,36 @@
   
   
   
-    <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Home
@@ -363,7 +393,49 @@
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage of LLMs
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -569,6 +641,15 @@
   <a href="#environment.SuperHexagonGymEnv._get_direction_indicator" class="md-nav__link">
     <span class="md-ellipsis">
       _get_direction_indicator
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment.SuperHexagonGymEnv._get_norm_wall_distances" class="md-nav__link">
+    <span class="md-ellipsis">
+      _get_norm_wall_distances
     </span>
   </a>
   
@@ -906,9 +987,40 @@ The image below shows an example scenario. The method retrieves all walls and fi
 
 </div><ul>
 <li><strong>[2-7]: Normalized wall distances per slot:</strong>
-  ::: environment.SuperHexagonGymEnv._get_norm_wall_distances</li>
+</li>
 </ul>
-<p>These values are calculated at each step in the <code>_get_state()</code> method and are used as inputs for the model:</p>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="environment.SuperHexagonGymEnv._get_norm_wall_distances"></a>
+    <div class="doc doc-contents first">
+
+        <p>Compute minimal distance to wall for each slot in normalized space [0-1]</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>environment.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_get_norm_wall_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute minimal distance to wall for each slot in normalized space [0-1]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wall_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_wall_distances</span><span class="p">()</span>
+    <span class="n">wall_distances</span> <span class="o">=</span> <span class="n">wall_distances</span> <span class="o">/</span> <span class="n">wall_distances</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">wall_distances</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div><p>These values are calculated at each step in the <code>_get_state()</code> method and are used as inputs for the model:</p>
 <ul>
 <li>
 
@@ -991,19 +1103,19 @@ The image below shows an example scenario. The method retrieves all walls and fi
 <ul>
 <li>
 <p><strong>Agent is in a free slot</strong></p>
-</li>
-<li>
-<p><code>1.0</code>: If the "Stay" action is selected.</p>
-</li>
+<ul>
+<li><code>1.0</code>: If the "Stay" action is selected.</li>
 <li><code>0.7</code>: If any action other than "Stay" is selected.</li>
-<li>
-<p>This will always result in a positive reward, with the value depending on the action chosen. This approach was adopted to account for the player "jittering" within a free slot, even though it may remain in a safe position. Such jittering sometimes led to a gameover when the agent hit the wall due to slight movement near the slot edges.</p>
+<li>This will always result in a positive reward, with the value depending on the action chosen. This approach was adopted to account for the player "jittering" within a free slot, even though it may remain in a safe position. Such jittering sometimes led to a gameover when the agent hit the wall due to slight movement near the slot edges.</li>
+</ul>
 </li>
 <li>
 <p><strong>Agent is in an occupied slot</strong></p>
-</li>
+<ul>
 <li><code>[(-1)-0]</code>: A continuous negative value, which depends on the distance to the closest free slot. As the agent moves further away from a free slot, the value decreases (becoming closer to -1). Conversely, the value increases as the agent approaches a free slot, reaching 0 and eventually transitioning to a reward.</li>
 <li>This was implemented to give the agent a stronger incentive to reach a free slot as quickly as possible, avoiding wasting time in an occupied slot.</li>
+</ul>
+</li>
 </ul>
 <blockquote>
 <p>"Free slot" is defined as a slot where, if the player remains in it, they will transition to the next wave of walls without resulting in a gameover.</p>
@@ -1172,12 +1284,18 @@ The image below shows an example scenario. The method retrieves all walls and fi
 To address this, we implemented key combinations that allow us to interact with the game while it is running.
 Using the <code>keyboard</code> library, we listened for key presses and created the following features:</p>
 <ul>
-<li>Freezing the entire process:</li>
+<li>Freezing the entire process:<ul>
 <li><code>Ctrl + Space</code></li>
-<li>Slowing down time:</li>
+</ul>
+</li>
+<li>Slowing down time:<ul>
 <li><code>Ctrl + Alt</code></li>
-<li>Toggling Debug logs:</li>
+</ul>
+</li>
+<li>Toggling Debug logs:<ul>
 <li><code>Ctrl + D</code></li>
+</ul>
+</li>
 </ul>
 <p>These controls enabled us to inspect specific scenarios in greater detail, gaining deeper insights into the agent's behavior and its internal values.
 With these debugging tools, we were able to identify the previously discussed player rotation anomaly and also detect some challenging layouts for the agent.</p>
