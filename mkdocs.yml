@@ -37,7 +37,9 @@ repo_url: https://github.com/Stinktopf/SuperHexagonAI
 repo_name: Stinktopf/SuperHexagonAI
 
 nav:
-  - Home: index.md
+  - Home:
+    - Home: index.md
+    - Usage of LLMs: llm.md
   - Getting Started: getting-started.md
   - Architecture: architecture.md
   - Implementation:
