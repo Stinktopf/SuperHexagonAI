@@ -29,6 +29,10 @@ The **action space** is discrete and consists of three possible moves: **stay in
 ### **What We Achieved**  
 Initially, our agent struggled to survive beyond **five seconds**, but through iterative improvements, it can now reach up to **30 seconds**. The integration of the **"next opening" direction flag** proved particularly useful in handling fast-paced **180-degree turns**.  
 
+<div align="center">
+  <img src="images/showcase.gif" width="66%">
+</div>
+
 Additionally, we tested **imitation learning**, using the **DQN model** as a teacher in the reward function. However, this approach did not lead to significant improvements.
 
 ## Find Your Way Around

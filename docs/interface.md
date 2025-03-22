@@ -9,7 +9,7 @@ With this wrapper, we accessed the game's memory, enabling features like:
 - Selecting a level
 - Restarting a level
 
-With the help of the wrapper and provided functions, it is also possible to carry out memory manipulations on the game
+With the help of the wrapper and provided functions, it is also possible to carry out memory manipulations on the game:
 
 - ::: superhexagon.SuperHexagonInterface._left
 - ::: superhexagon.SuperHexagonInterface._right

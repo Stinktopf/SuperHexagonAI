@@ -17,6 +17,8 @@
 The performance of our approach is outlined below.
 
 ## Proximal Policy Optimization with Stable-Baselines3
+The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.
+
 
 <div class="chart-pair">
   <div class="chart-container">
@@ -28,6 +30,7 @@ The performance of our approach is outlined below.
 </div>
 
 ## Proximal Policy Optimization without Stable-Baselines3
+Without the use of Stable-Baselines3, the PPO implementation reached a maximum survival time of 25 seconds. The average value was around 9 seconds. Compared to the SB3-based approach, this version showed weaker learning progress with lower overall stability and performance.
 
 <div class="chart-pair">
   <div class="chart-container">
@@ -39,6 +42,7 @@ The performance of our approach is outlined below.
 </div>
 
 ## Deep Q Network
+The DQN approach briefly reached a maximum survival time of 25 seconds. However, the average remained around 8 seconds. After an early peak in performance, learning collapsed significantly. Both reward and episode length decreased and then stagnated at a lower level for the remainder of training.
 
 <div class="chart-pair">
   <div class="chart-container">
