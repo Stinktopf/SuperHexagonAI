@@ -687,7 +687,7 @@
   }
 </style>
 
-<p>The performance of our approach is outlined below.</p>
+<p>The performance of our approach is outlined below. All three models work on our environment.</p>
 <h2 id="proximal-policy-optimization-with-stable-baselines3">Proximal Policy Optimization with Stable-Baselines3<a class="headerlink" href="#proximal-policy-optimization-with-stable-baselines3" title="Permanent link">&para;</a></h2>
 <p>The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.</p>
 <div class="chart-pair">
@@ -722,7 +722,7 @@
 </div>
 
 <h2 id="comparison-with-existing-approach">Comparison with existing approach<a class="headerlink" href="#comparison-with-existing-approach" title="Permanent link">&para;</a></h2>
-<p>Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO (using stable baselines3). However, our environment lacks precision, and it's important to note that the image-based DQN method outperforms our approach by generalizing more effectively across various game stages.</p>
+<p>Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO using Stable-Baselines3 and reaching usable results faster. However, our environment lacks precision and our experiments show that while our model quickly becomes effective, the image based DQN method eventually outperforms it by generalizing more effectively across various game stages and attaining a much higher maximum performance.</p>
 <script>
 function parseCSV(csv) {
     const lines = csv.trim().split('\n');
