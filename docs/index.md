@@ -35,6 +35,26 @@ Initially, our agent struggled to survive beyond **five seconds**, but through i
 
 Additionally, we tested **imitation learning**, using the **DQN model** as a teacher in the reward function. However, this approach did not lead to significant improvements.
 
+### **Related Work**
+
+#### [SuperHexagonAI](https://github.com/polarbart/SuperHexagonAI)
+The project "SuperHexagonAI" developed by *polarbart*, implements a reinforcement learning agent for the game Super Hexagon. 
+It uses Deep Q-Networks (DQN) combined with Convolutional Neural Networks (CNNs) for processing game frames. 
+The agent learns by receiving rewards based on survival time, and the system is optimized using Rainbow extensions like distributional RL and noisy networks. 
+Additionally, it uses an external C++ library (PyRLHook) to manage memory and intercept system calls, facilitating efficient frame handling and game speed manipulation.
+
+This project is based on the "SuperHexagonAI" repository, which is why it was forked. However, we differ by implementing Proximal Policy Optimization (PPO) instead of DQN. 
+Additionally, our approach trains the agent using direct game variables, rather than relying on image data for frame processing.
+
+#### [super-hexagon-ai](https://github.com/adrianchifor/super-hexagon-ai)
+
+The "super-hexagon-ai" repository by *adrianchifor* was written in C++ and implemented a memory hook into Super Hexagon. 
+It researched specific memory locations for key game variables, enabling extraction of valuable game state variables and direct manipulation of the player's rotation. 
+The system essentially functions as a "cheat engine" by directly setting the player’s rotation to ensure survival. 
+
+This differs from our approach, where we extend the memory hook to work with game variables in a way that interacts with the game as intended. 
+Our implementation uses PPO for training, focusing on game state variables without violating the game rules or manipulating the gameplay directly.
+
 ## Find Your Way Around
 Follow these links to learn more about the different aspects of our project:
 
