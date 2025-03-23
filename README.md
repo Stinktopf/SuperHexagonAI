@@ -101,7 +101,7 @@ opencv-python
 Install them with:
 
 ```
-python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+python -m pip install -r requirements.txt --index-url https://download.pytorch.org/whl/nightly/cu128
 ```
 
 Additionally, you need Super Hexagon in the **pre-neo Steam Beta version** to use this setup:

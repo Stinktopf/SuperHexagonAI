@@ -1,0 +1,84 @@
+site_name: SuperHexagon PPO
+theme:
+  logo: assets/icon.svg
+  favicon: assets/icon.svg
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - navigation.expand
+    - toc.integrate
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - navigation.indexes
+  palette:
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  font:
+    text: Roboto
+    code: Fira Code
+  icon:
+    repo: fontawesome/brands/github
+
+repo_url: https://github.com/Stinktopf/SuperHexagonAI
+repo_name: Stinktopf/SuperHexagonAI
+
+nav:
+  - Home:
+    - Home: index.md
+    - Usage of LLMs: llm.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Implementation:
+    - Superhexagon Interface: interface.md
+    - Environment: environment.md
+    - Training with Stable-Baselines3: sb3.md
+    - Training witout Stable-Baselines3: no_sb3.md
+  - Performance: performance.md
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      inline_syntax: ["$", "$"]
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.extra
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+  - js/chart.js
+
+extra:
+  social:
+    - icon: fontawesome/solid/shield
+      link: https://stinktopf.github.io/SuperHexagonAI/legal/
+      name: Legal

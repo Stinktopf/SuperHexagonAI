@@ -1,0 +1,64 @@
+---
+config:
+  layout: elk
+  theme: dark
+  look: classic
+---
+flowchart TD
+    subgraph subGraph0["Game Memory Access"]
+        D1["_left (Writes Memory)"]
+        D2["_right (Writes Memory)"]
+        D3["get_triangle_angle (Reads Memory)"]
+        D4["get_num_slots (Reads Memory)"]
+        D5["get_num_walls (Reads Memory)"]
+        D6["get_triangle_slot (Reads Memory)"]
+        D7["get_walls (Reads Memory)"]
+    end
+    subgraph subGraph1["Super Hexagon Game"]
+        A["SuperHexagonInterface"]
+        subGraph0
+    end
+    subgraph subGraph2["SuperHexagon Gym Environment"]
+        E["SuperHexagonGymEnv"]
+        F["step"]
+        G["reset"]
+        H["_get_state"]
+        I["_get_reward"]
+        J["_get_wall_distances"]
+        K["_get_norm_wall_distances"]
+        L["_get_norm_player_angle"]
+        M["get_exit_distance"]
+        N["_get_direction_indicator"]
+    end
+    subgraph subGraph3["Stable-Baselines3 Trainer"]
+        O["PPO Trainer - SB3"]
+        P["EntropyCoefficientScheduler"]
+    end
+    subgraph subGraph4["Custom PyTorch PPO Trainer"]
+        Q["PPO Trainer - PyTorch"]
+        R["ActorCritic Network"]
+        S["Policy Head"]
+        T["Value Head"]
+        U["PPOAgent"]
+        V["Compute GAE"]
+        W["Training Loop"]
+        X["Update Policy"]
+    end
+    A --Writes Memory--> D1
+    A --Writes Memory--> D2
+    A --Reads Memory--> D3
+    A --Reads Memory--> D4
+    A --Reads Memory--> D5
+    A --Reads Memory--> D6
+    A --Reads Memory--> D7
+    E -- Uses --> A
+    E -- Defines --> F & G & H & I & J & K & L & M & N
+    O -- Uses --> E
+    O -- Manages Entropy --> P
+    Q -- Uses --> E
+    Q -- Utilizes --> R
+    R -- Consists of --> S & T
+    Q -- Controls --> U
+    U -- Computes --> V
+    U -- Executes --> W
+    U -- Updates --> X
