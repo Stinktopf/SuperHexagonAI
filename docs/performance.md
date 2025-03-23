@@ -24,7 +24,7 @@ The performance of our approach is outlined below.
 
 ## Proximal Policy Optimization with Stable-Baselines3
 
-The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.
+The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved nearly 3 seconds by the end of training.
 
 <div class="chart-pair">
   <div class="chart-container">
