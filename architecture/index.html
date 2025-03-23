@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#introduction" class="md-skip">
+        <a href="#diagram" class="md-skip">
           Skip to content
         </a>
       
@@ -315,7 +315,9 @@
           
             
               
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -510,15 +512,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    <span class="md-ellipsis">
-      Introduction
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#diagram" class="md-nav__link">
@@ -719,6 +712,8 @@
               <article class="md-content__inner md-typeset">
                 
                   
+  
+
 
 
   
@@ -727,7 +722,6 @@
 
   <h1>Architecture</h1>
 
-<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p>The architecture uses a memory hook to extract the game state directly from RAM, train an agent with Proximal Policy Optimization (PPO), and enable it to execute its own inputs in the game via memory injection. This approach is based on the original memory manipulation from <a href="https://github.com/polarbart/SuperHexagonAI">SuperHexagonAI</a>. There are two trainers, one with Stable-baselines3 and one that uses PyTorch, which handle the training via a unified Gymnasium environment. The environment interacts with the game via a C++ interface and memory access.</p>
 <h2 id="diagram">Diagram<a class="headerlink" href="#diagram" title="Permanent link">&para;</a></h2>
 <div align="center">
@@ -740,8 +734,13 @@
 
 
 
+  
+  
 
 
+
+
+  
 
 
 
