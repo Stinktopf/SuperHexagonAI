@@ -20,6 +20,7 @@ Our project extends the [SuperHexagonAI](https://github.com/polarbart/SuperHexag
 
 ### **Gymnasium Environment**  
 To train the AI effectively, we created a **custom reinforcement learning environment** for Super Hexagon using **Gymnasium**. Instead of using image data, we access the game's memory directly to construct a structured state representation of the game state:  
+
 - **Wall distances**: A list of normalized distances to the nearest walls for each slot around the central hexagon.  
 - **Player orientation**: The normalized sine of the player’s angle, providing a continuous representation of rotation.  
 - **Exit direction flag**: A binary indicator showing whether the next safe opening is to the left or right, crucial for fast-turn scenarios.  
