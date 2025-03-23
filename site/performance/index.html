@@ -313,7 +313,9 @@
           
             
               
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -697,15 +699,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deep-q-network" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deep Q Network
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#comparison-with-existing-approach" class="md-nav__link">
     <span class="md-ellipsis">
       Comparison with existing approach
@@ -735,6 +728,8 @@
               <article class="md-content__inner md-typeset">
                 
                   
+  
+
 
 
   
@@ -759,7 +754,7 @@
   }
 </style>
 
-<p>The performance of our approach is outlined below. All three models work on our environment.</p>
+<p>The performance of our approach is outlined below.</p>
 <h2 id="proximal-policy-optimization-with-stable-baselines3">Proximal Policy Optimization with Stable-Baselines3<a class="headerlink" href="#proximal-policy-optimization-with-stable-baselines3" title="Permanent link">&para;</a></h2>
 <p>The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.</p>
 <div class="chart-pair">
@@ -779,17 +774,6 @@
   </div>
   <div class="chart-container">
     <canvas id="ppo_no_sb3_episode" width="500" height="400"></canvas>
-  </div>
-</div>
-
-<h2 id="deep-q-network">Deep Q Network<a class="headerlink" href="#deep-q-network" title="Permanent link">&para;</a></h2>
-<p>The DQN approach briefly reached a maximum survival time of 25 seconds. However, the average remained around 8 seconds. After an early peak in performance, learning collapsed significantly. Both reward and episode length decreased and then stagnated at a lower level for the remainder of training.</p>
-<div class="chart-pair">
-  <div class="chart-container">
-    <canvas id="dqn_reward" width="500" height="400"></canvas>
-  </div>
-  <div class="chart-container">
-    <canvas id="dqn_episode" width="500" height="400"></canvas>
   </div>
 </div>
 
@@ -927,10 +911,6 @@ function loadCharts(isDarkMode) {
     loadCSV('ppo_no_sb3.csv', function (data) {
         createChartsFromData(data, 'ppo_no_sb3_reward', 'ppo_no_sb3_episode', isDarkMode);
     });
-
-    loadCSV('dqn.csv', function (data) {
-        createChartsFromData(data, 'dqn_reward', 'dqn_episode', isDarkMode);
-    });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -957,8 +937,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
+  
+  
 
 
+
+
+  
 
 
 

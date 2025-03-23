@@ -18,11 +18,6 @@ This approach helped speed up the experimentation phase and ensured we explored 
 We implemented the PPO algorithm with the help of the [[1]](https://arxiv.org/abs/1506.02438) [[2]](https://arxiv.org/abs/1707.06347) papers and substantial help of LLMs for the construction of the scaffolding. 
 LLMs helped us clarify complex mathematical concepts and answer questions related to the implementation.
 
-## Development of validation DQN
-The validation DQN was convert from the PPO implementation via a LLM.
-Its main purpose was to serve as a benchmark for comparing performance with the other models.
-This is the reason why it performs so poorly.
-
 ## Debugging
 For troubleshooting, we used LLMs to assist in debugging, allowing us to quickly identify issues in the code and suggesting possible solutions.
 The LLMs helped us pinpoint errors more quickly such as syntax mistakes, logical inconsistencies, or missing dependencies.

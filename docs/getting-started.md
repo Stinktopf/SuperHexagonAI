@@ -131,9 +131,3 @@ or
 ```powershell
 python trainer_PPO_GYM.py
 ```
-
-or
-
-```powershell
-python trainer_DQN_GYM_SB3.py
-```

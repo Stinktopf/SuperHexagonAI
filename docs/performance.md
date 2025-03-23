@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -14,11 +20,11 @@
   }
 </style>
 
-The performance of our approach is outlined below. All three models work on our environment.
+The performance of our approach is outlined below.
 
 ## Proximal Policy Optimization with Stable-Baselines3
-The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.
 
+The approach utilizing Stable-Baselines3 demonstrated the strongest performance in our comparison. Over the course of 1,000,000 timesteps, it reached a peak survival time of 33 seconds, with an average performance of up to 16 seconds. Notably, even the minimum survival time improved, rising to nearly 3 seconds by the end of training.
 
 <div class="chart-pair">
   <div class="chart-container">
@@ -30,6 +36,7 @@ The approach utilizing Stable-Baselines3 demonstrated the strongest performance 
 </div>
 
 ## Proximal Policy Optimization without Stable-Baselines3
+
 Without the use of Stable-Baselines3, the PPO implementation reached a maximum survival time of 25 seconds. The average value was around 9 seconds. Compared to the SB3-based approach, this version showed weaker learning progress with lower overall stability and performance.
 
 <div class="chart-pair">
@@ -41,25 +48,9 @@ Without the use of Stable-Baselines3, the PPO implementation reached a maximum s
   </div>
 </div>
 
-## Deep Q Network
-The DQN approach briefly reached a maximum survival time of 25 seconds. However, the average remained around 8 seconds. After an early peak in performance, learning collapsed significantly. Both reward and episode length decreased and then stagnated at a lower level for the remainder of training.
-
-<div class="chart-pair">
-  <div class="chart-container">
-    <canvas id="dqn_reward" width="500" height="400"></canvas>
-  </div>
-  <div class="chart-container">
-    <canvas id="dqn_episode" width="500" height="400"></canvas>
-  </div>
-</div>
-
 ## Comparison with existing approach
+
 Our approach performs quite well, achieving peak survival times of up to 33 seconds with PPO using Stable-Baselines3 and reaching usable results faster. However, our environment lacks precision and our experiments show that while our model quickly becomes effective, the image based DQN method eventually outperforms it by generalizing more effectively across various game stages and attaining a much higher maximum performance.
-
-
-
-
-
 
 <script>
 function parseCSV(csv) {
@@ -192,10 +183,6 @@ function loadCharts(isDarkMode) {
 
     loadCSV('ppo_no_sb3.csv', function (data) {
         createChartsFromData(data, 'ppo_no_sb3_reward', 'ppo_no_sb3_episode', isDarkMode);
-    });
-
-    loadCSV('dqn.csv', function (data) {
-        createChartsFromData(data, 'dqn_reward', 'dqn_episode', isDarkMode);
     });
 }
 
