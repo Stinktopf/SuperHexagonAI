@@ -1,8 +1,6 @@
-# Getting Started
+The installation process is described below.
 
-## Installation
-
-### Prerequisites
+## Prerequisites
 
 Before getting started, ensure you have the following installed on your system:
 
@@ -15,7 +13,7 @@ Before getting started, ensure you have the following installed on your system:
 
 ---
 
-### Step 1: Install C++ Build Tools, CMake, and Python
+## Step 1: Install C++ Build Tools, CMake, and Python
 
 Please follow these steps to install **Visual Studio Community Edition 2022**, **CMake**, and **Python 3.12**:
 
@@ -36,7 +34,7 @@ Please follow these steps to install **Visual Studio Community Edition 2022**, *
 
 ---
 
-### Step 2: Install Python Dependencies
+## Step 2: Install Python Dependencies
 
 Please install the required Python packages using the provided `requirements.txt` file:
 
@@ -63,7 +61,7 @@ torch==2.6.0
 
 ---
 
-### Step 3: Setup Super Hexagon
+## Step 3: Setup Super Hexagon
 
 To use this setup, you need **Super Hexagon in the Pre-Neo Steam Beta version**. Ensure the following settings are applied:
 
@@ -80,7 +78,7 @@ Additionally, ensure that both **the Python process and the game process are run
 
 ---
 
-### Step 4: Clone the Repository
+## Step 4: Clone the Repository
 
 To download the necessary files, run:
 
@@ -91,7 +89,7 @@ cd SuperHexagonAI
 
 ---
 
-### Step 5: Compile the DLL & Helper Executable
+## Step 5: Compile the DLL & Helper Executable
 
 To compile the necessary binaries, execute:
 
@@ -102,7 +100,7 @@ python compile_additional_binaries.py
 
 ---
 
-### Step 6: Install the Library
+## Step 6: Install the Library
 
 Install the library globally using pip:
 
@@ -118,7 +116,7 @@ cd ..
 
 ---
 
-### Step 7: Run the Trainer
+## Step 7: Run the Trainer
 
 Execute a trainer in an administrator command line:
 
