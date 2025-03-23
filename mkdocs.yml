@@ -46,7 +46,7 @@ nav:
     - Superhexagon Interface: interface.md
     - Environment: environment.md
     - Training with Stable-Baselines3: sb3.md
-    - Training witout Stable-Baselines3: no_sb3.md
+    - Training without Stable-Baselines3: no_sb3.md
   - Performance: performance.md
 
 plugins:
